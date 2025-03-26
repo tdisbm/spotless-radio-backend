@@ -1,0 +1,8 @@
+{
+  "DATABASE": "spotless_radio",
+  "USERNAME": "spotless",
+  "PASSWORD": "hackme",
+  "HOST": "localhost",
+  "PORT": 5432,
+  "DIALECT": "postgres"
+}
