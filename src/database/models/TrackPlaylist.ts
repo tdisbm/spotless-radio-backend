@@ -10,8 +10,8 @@ import {
     Table,
     Unique
 } from "sequelize-typescript";
-import {AuthUser} from "./AuthUser";
-import {AuthRole} from "./AuthRole";
+import {Track} from "./Track";
+import {Playlist} from "./Playlist";
 
 
 // noinspection JSAnnotator
@@ -20,23 +20,23 @@ import {AuthRole} from "./AuthRole";
     updatedAt: false,
     deletedAt: false,
 })
-export class AuthUserRole extends Model<AuthUserRole> {
+export class TrackPlaylist extends Model<TrackPlaylist> {
     @PrimaryKey
     @Default(DataType.UUIDV4)
     @Column(DataType.UUID)
     declare id: string;
 
-    @ForeignKey(() => AuthUser)
+    @ForeignKey(() => Track)
     @AllowNull(false)
     @NotNull
-    @Unique('userId-roleId')
+    @Unique('trackId-playlistId')
     @Column(DataType.STRING)
-    userId: string;
+    trackId: string;
 
-    @ForeignKey(() => AuthRole)
+    @ForeignKey(() => Playlist)
     @AllowNull(false)
     @NotNull
-    @Unique('userId-roleId')
+    @Unique('trackId-playlistId')
     @Column(DataType.STRING)
-    roleId: string;
+    playlistId: string;
 }

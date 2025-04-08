@@ -1,12 +1,10 @@
-import * as config from "../config/security.json"
 import {sign, verify} from "jsonwebtoken";
-
-const ACCESS_EXPIRES_IN = "14d";
+import {JWT_TOKEN_TTL, SECRET_KEY} from "../config/security";
 
 export function JWTTokenGenerate(payload: object): string {
-    return sign(payload, config.SECRET_KEY, { expiresIn: ACCESS_EXPIRES_IN });
+    return sign(payload, SECRET_KEY, { expiresIn: JWT_TOKEN_TTL });
 }
 
 export function JWTTokenVerify(token: string): any {
-    return verify(token, config.SECRET_KEY, { ignoreExpiration: false });
+    return verify(token, SECRET_KEY, { ignoreExpiration: false });
 }

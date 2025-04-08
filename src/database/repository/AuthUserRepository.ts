@@ -2,11 +2,20 @@ import {AuthUser} from "../models/AuthUser";
 import {sequelize} from "../index";
 import {AuthRole} from "../models/AuthRole";
 import {Transaction} from "sequelize";
+import bcrypt from "bcryptjs";
 
 
 export class UserNotFoundError extends Error {
 }
 
+
+export async function getUsers(skip: number, take: number) {
+    return AuthUser.findAll({
+        order: [['createdAt', 'DESC']],
+        offset: skip,
+        limit: take
+    });
+}
 
 export async function createUserSignUp(userData: any) {
     if (userData.hasOwnProperty('roles')) {
@@ -30,10 +39,8 @@ export async function createUser(userData: any) {
     }
     const transaction: Transaction = await sequelize.transaction();
     try {
-        const userDataReady = {
-            ...userData,
-        };
-        const user: AuthUser = await AuthUser.create(userDataReady, {transaction});
+        userData.password = await bcrypt.hash(userData.password, 10);
+        const user: AuthUser = await AuthUser.create(userData, {transaction});
         await user.setRoles(userDataRoles.map(r => r.id), {transaction});
         await transaction.commit();
         return user;

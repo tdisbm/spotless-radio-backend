@@ -1,12 +1,12 @@
-import * as config from '../config/storage.json'
 import * as fs from "fs";
 import path from "node:path";
 
 
-const ROOT_PATH = __dirname + '../../../' + config.directory
+export const MEDIA_ROOT_PATH = process.env.MEDIA_ROOT || __dirname + '/../../media/'
+
 
 export async function uploadFiles(pathname: string, files: any) {
-    const targetPath = path.join(ROOT_PATH, pathname);
+    const targetPath = path.join(MEDIA_ROOT_PATH, pathname);
     if (!fs.existsSync(targetPath)) {
         fs.mkdirSync(targetPath, { recursive: true });
     }
@@ -27,7 +27,7 @@ export async function uploadFiles(pathname: string, files: any) {
 
 export function createFileOrDirectory(pathname: string, isDirectory: boolean = false): boolean {
     try {
-        const absPath = ROOT_PATH + '/' + pathname;
+        const absPath = path.normalize(MEDIA_ROOT_PATH + '/' + pathname);
         if (isDirectory) {
             fs.mkdirSync(absPath, {recursive: true});
         } else {
@@ -41,7 +41,7 @@ export function createFileOrDirectory(pathname: string, isDirectory: boolean = f
 
 export function deleteFileOrDirectory(pathname: string): boolean {
     try {
-        const absPath = ROOT_PATH + '/' + pathname;
+        const absPath = path.normalize(MEDIA_ROOT_PATH + '/' + pathname);
         if (fs.lstatSync(absPath).isDirectory()) {
             fs.rmdirSync(absPath, {recursive: true});
         } else {
@@ -55,8 +55,8 @@ export function deleteFileOrDirectory(pathname: string): boolean {
 
 export function renameFileOrDirectory(oldPath: string, newPath: string): boolean {
     try {
-        const absOldPath = ROOT_PATH + '/' + oldPath;
-        const absNewPath = ROOT_PATH + '/' + newPath;
+        const absOldPath = path.normalize(MEDIA_ROOT_PATH + '/' + oldPath);
+        const absNewPath = path.normalize(MEDIA_ROOT_PATH + '/' + newPath);
         fs.renameSync(absOldPath, absNewPath);
         return true;
     } catch (error) {
@@ -66,11 +66,11 @@ export function renameFileOrDirectory(oldPath: string, newPath: string): boolean
 
 export function listDirectory(pathname: string): any[] {
     try {
-        const absPath = ROOT_PATH + '/' + pathname;
+        const absPath = path.normalize(MEDIA_ROOT_PATH + '/' + pathname);
         return fs.readdirSync(absPath, {withFileTypes: true}).map(f => ({
             name: f.name,
             isDirectory: f.isDirectory(),
-            relativePath: absPath.replace(ROOT_PATH, '')
+            relativePath: absPath.replace(MEDIA_ROOT_PATH, '')
         }));
     } catch (error) {
         return [];
@@ -87,8 +87,8 @@ export function listDirectory(pathname: string): any[] {
  * @param newPath
  */
 export function moveFileOrDirectory(oldPath: string, newPath: string): void {
-    oldPath = ROOT_PATH + '/' + oldPath;
-    newPath = ROOT_PATH + '/' + newPath;
+    oldPath = path.normalize(MEDIA_ROOT_PATH + '/' + oldPath);
+    newPath = path.normalize(MEDIA_ROOT_PATH + '/' + newPath);
 
     if (!fs.existsSync(oldPath)) {
         throw new Error(`Source path does not exist: ${oldPath}`);
@@ -96,6 +96,7 @@ export function moveFileOrDirectory(oldPath: string, newPath: string): void {
 
     const isDirectory = fs.statSync(oldPath).isDirectory();
     const targetPath = path.join(newPath, path.basename(oldPath));
+
 
     if (oldPath === targetPath) {
         throw new Error("Source and destination paths are identical.");

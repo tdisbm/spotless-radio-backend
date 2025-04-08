@@ -1,0 +1,107 @@
+version: '3.8'
+
+services:
+  app-express:
+    build: .
+    container_name: app-express
+    command: npm run start:start-express-prod
+    restart: always
+    environment:
+      - STREAM_FFMPEG_BIN=ffmpeg
+      - DATABASE_NAME=spotless_radio
+      - DATABASE_USERNAME=spotless
+      - DATABASE_PASSWORD=hackme
+      - DATABASE_HOST=postgres
+      - DATABASE_PORT=5432
+      - DATABASE_DIALECT=postgres
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+    volumes:
+      - ./media:/app/media
+    expose:
+      - 3000
+    depends_on:
+      - icecast
+      - postgres
+      - redis
+    networks:
+      - common
+
+  app-stream:
+    build: .
+    container_name: app-stream
+    command: npm run start:start-stream-prod
+    restart: always
+    environment:
+      - STREAM_FFMPEG_BIN=ffmpeg
+      - DATABASE_NAME=spotless_radio
+      - DATABASE_USERNAME=spotless
+      - DATABASE_PASSWORD=hackme
+      - DATABASE_HOST=postgres
+      - DATABASE_PORT=5432
+      - DATABASE_DIALECT=postgres
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+    volumes:
+      - ./media:/app/media
+    depends_on:
+      - app-express
+    networks:
+      - common
+
+  nginx:
+    image: nginx:1.25
+    container_name: nginx
+    ports:
+      - "3000:80"
+    volumes:
+      - ./docker/conf/nginx.conf:/etc/nginx/conf.d/default.conf
+    depends_on:
+      - app-express
+      - app-stream
+    networks:
+      - common
+
+
+  postgres:
+    image: postgres:15
+    container_name: postgres
+    environment:
+      POSTGRES_USER: spotless
+      POSTGRES_PASSWORD: hackme
+      POSTGRES_DB: spotless_radio
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./docker/init:/docker-entrypoint-initdb.d
+    networks:
+      - common
+
+
+  icecast:
+    image: moul/icecast
+    container_name: icecast
+    ports:
+      - "6969:6969"
+    volumes:
+      - ./docker/conf/icecast.xml:/etc/icecast2/icecast.xml
+    restart: unless-stopped
+    networks:
+      - common
+
+  redis:
+    image: redis:alpine
+    container_name: redis
+    restart: always
+    networks:
+      - common
+
+
+volumes:
+  media:
+  postgres-data:
+
+networks:
+  common:
+    driver: bridge

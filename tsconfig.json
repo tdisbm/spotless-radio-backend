@@ -1,18 +1,23 @@
 {
   "compilerOptions": {
-    "target": "es6",
+    "target": "ES2021",
     "module": "commonjs",
     "rootDir": "src",
     "outDir": "dist",
     "sourceMap": true,
     "resolveJsonModule": true,
     "lib": [
-      "es6",
-      "dom"
+      "ES2021",
+      "DOM"
     ],
     "esModuleInterop": true,
     "experimentalDecorators": true,
-    "emitDecoratorMetadata": true
+    "emitDecoratorMetadata": true,
+    "allowSyntheticDefaultImports": true,
+    "moduleResolution": "node",
+    "strictPropertyInitialization": false,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true
   },
   "include": [
     "src/**/*.ts"

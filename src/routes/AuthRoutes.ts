@@ -1,11 +1,13 @@
-import {AppExpress} from "../app";
 import bcrypt from "bcryptjs";
 import {AuthUser} from "../database/models/AuthUser";
 import {JWTTokenGenerate} from "../utils/AuthUtils";
 import {createUserSignUp, findUserByUsername, UserNotFoundError} from "../database/repository/AuthUserRepository";
+import {Router} from "express";
 
 
-AppExpress.post('/auth/sign-in', async (request, response) => {
+const router: Router = Router();
+
+router.post('/auth/sign-in', async (request, response) => {
     let responseStat: number;
     let responseData: any;
     try {
@@ -27,12 +29,11 @@ AppExpress.post('/auth/sign-in', async (request, response) => {
     response.send(responseData);
 });
 
-AppExpress.post('/auth/sign-up', async (request, response) => {
+router.post('/auth/sign-up', async (request, response) => {
     let responseStat: number;
     let responseData: any;
     try {
-        const passwordHashed = await bcrypt.hash(request.body.password, 10);
-        const user: AuthUser = await createUserSignUp({...request.body, password: passwordHashed});
+        const user: AuthUser = await createUserSignUp({...request.body});
         const authToken = JWTTokenGenerate(await user.toJSON())
         responseStat = 200;
         responseData = authToken;
@@ -43,3 +44,6 @@ AppExpress.post('/auth/sign-up', async (request, response) => {
     response.status(responseStat);
     response.send(responseData);
 });
+
+
+export default router;

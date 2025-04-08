@@ -15,6 +15,7 @@ import {BelongsToManyGetAssociationsMixin, BelongsToManySetAssociationsMixin, No
 import {AuthRole} from "./AuthRole";
 
 
+// noinspection JSAnnotator
 @Table({
     timestamps: true,
 })
@@ -22,7 +23,7 @@ export class AuthUser extends Model<AuthUser> {
     @PrimaryKey
     @Default(DataType.UUIDV4)
     @Column(DataType.UUID)
-    id: string;
+    declare id: string;
 
     @AllowNull(false)
     @NotNull
