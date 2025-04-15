@@ -10,7 +10,8 @@ import {
     Model,
     NotNull,
     PrimaryKey,
-    Table, Unique
+    Table,
+    Unique
 } from "sequelize-typescript";
 import {TrackPlaylist} from "./TrackPlaylist";
 import {BelongsToManyGetAssociationsMixin, BelongsToManySetAssociationsMixin, NonAttribute} from "sequelize";

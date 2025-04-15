@@ -1,5 +1,6 @@
 import {
-    AllowNull, BelongsTo, BelongsToMany,
+    AllowNull,
+    BelongsTo,
     Column,
     DataType,
     Default,
@@ -11,14 +12,7 @@ import {
     Unique
 } from "sequelize-typescript";
 import {Playlist} from "./Playlist";
-import {
-    BelongsToManyGetAssociationsMixin,
-    BelongsToManySetAssociationsMixin,
-    BelongsToSetAssociationMixin,
-    NonAttribute
-} from "sequelize";
-import {Track} from "./Track";
-import {TrackPlaylist} from "./TrackPlaylist";
+import {BelongsToSetAssociationMixin, NonAttribute} from "sequelize";
 
 
 // noinspection JSAnnotator

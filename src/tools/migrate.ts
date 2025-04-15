@@ -1,5 +1,5 @@
-import { readdir } from 'fs/promises';
-import { join } from 'path';
+import {readdir} from 'fs/promises';
+import {join} from 'path';
 import {sequelize} from "../database";
 
 export async function runMigrations() {
