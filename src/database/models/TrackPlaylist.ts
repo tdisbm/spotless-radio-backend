@@ -39,4 +39,9 @@ export class TrackPlaylist extends Model<TrackPlaylist> {
     @Unique('trackId-playlistId')
     @Column(DataType.STRING)
     playlistId: string;
+
+    @AllowNull(false)
+    @NotNull
+    @Column({type: DataType.INTEGER})
+    sortOrder: number;
 }

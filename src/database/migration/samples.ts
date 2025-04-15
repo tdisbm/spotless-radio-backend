@@ -1,9 +1,8 @@
 import {createRole} from "../repository/AuthRoleRepository";
 import {createUser} from "../repository/AuthUserRepository";
 import {AuthRole} from "../models/AuthRole";
-import {createPlaylist, createTracks} from "../repository/PlaylistRepository";
+import {createPlaylist} from "../repository/PlaylistRepository";
 import {Playlist} from "../models/Playlist";
-import {Track} from "../models/Track";
 import {Stream} from "../models/Stream";
 
 
@@ -18,15 +17,11 @@ export async function migrate() {
         lastName: "Cerchez",
         roles: [admin.dataValues]
     });
-    const tracks: Track[] = await createTracks([
-        {location: "/music/misc/bassG.wav", sortOrder: 3},
-        {location: "/music/misc/postPunk22.wav", sortOrder: 2}
-    ])
     const playlist: Playlist = await createPlaylist({
         name: "default-stream",
         description: "My default stream",
         coverImage: "No cover image for now",
-        tracks: tracks,
+        tracks: [],
         enabled: true,
         isRecursive: true
     });

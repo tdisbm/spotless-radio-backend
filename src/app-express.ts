@@ -7,7 +7,7 @@ import {CORSMiddleware} from "./routes/middleware/CORSMiddleware";
 import authRoleRoutes from "./routes/AuthRoleRoutes";
 import authRoutes from "./routes/AuthRoutes";
 import authUserRoutes from "./routes/AuthUserRoutes";
-import fileSystemRoutes from "./routes/FileSystemRoutes";
+import trackRoutes from "./routes/TrackRoutes";
 import playlistRoutes from "./routes/PlaylistRoutes";
 import streamRoutes from "./routes/StreamRoutes";
 
@@ -16,20 +16,20 @@ export const AppExpress: Express = express();
 export const AppServer: ServerHTTP = createServer(AppExpress);
 
 
+AppExpress.use(fileUpload()); // Enable file uploads
 AppExpress.use(express.json());
 AppExpress.use(CORSMiddleware);
 AppExpress.use(express.urlencoded({extended: true})); // Parse form fields
-AppExpress.use(fileUpload()); // Enable file uploads
 
 
 AppExpress.use(authRoleRoutes);
 AppExpress.use(authRoutes);
 AppExpress.use(authUserRoutes);
-AppExpress.use(fileSystemRoutes);
+AppExpress.use(trackRoutes);
 AppExpress.use(playlistRoutes);
 AppExpress.use(streamRoutes);
 
 
-sequelize.sync({force: false}).finally(async () => {
+sequelize.sync({force: false}).finally(() => {
     AppServer.listen(3000);
 });

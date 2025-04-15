@@ -7,7 +7,8 @@ export async function IsAdminMiddleware(request: any, response: any, next: any) 
     try {
         const authHeader = request.headers.authorization;
         const token = authHeader.split(" ")[1];
-        const user = new AuthUser(JWTTokenVerify(token))
+        const tokenDecoded = JWTTokenVerify(token);
+        const user: AuthUser = await AuthUser.findOne(tokenDecoded.id)
         if (!(await isAdmin(user))) {
             throw Error("You're not an admin! Nice try haha!")
         }
@@ -26,7 +27,8 @@ export async function AuthMiddleware(request: any, response: any, next: any) {
         }
         const token = authHeader.split(" ")[1];
         const tokenDecoded: any = JWTTokenVerify(token);
-        Object.assign(request, {user: new AuthUser(tokenDecoded)});
+        const user: AuthUser = await AuthUser.findOne(tokenDecoded.id)
+        Object.assign(request, {user});
         next();
     } catch (error: any) {
         if (error.name === "TokenExpiredError") {

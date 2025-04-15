@@ -10,7 +10,7 @@ import {
     Model,
     NotNull,
     PrimaryKey,
-    Table
+    Table, Unique
 } from "sequelize-typescript";
 import {TrackPlaylist} from "./TrackPlaylist";
 import {BelongsToManyGetAssociationsMixin, BelongsToManySetAssociationsMixin, NonAttribute} from "sequelize";
@@ -32,14 +32,9 @@ export class Track extends Model<Track> {
 
     @AllowNull(false)
     @NotNull
+    @Unique
     @Column({type: DataType.STRING})
     location: string;
-
-
-    @AllowNull(false)
-    @NotNull
-    @Column({type: DataType.INTEGER})
-    sortOrder: number;
 
     @BelongsToMany(() => Playlist, () => TrackPlaylist)
     declare playlists: NonAttribute<Playlist[]>;

@@ -3,7 +3,6 @@ import {PassThrough} from 'stream';
 import {ActiveStreamInfo} from "./ActiveStreamInfo";
 import {Stream} from "../database/models/Stream";
 import path from "node:path";
-import {MEDIA_ROOT_PATH} from "../utils/FileSystemUtils";
 import {parseFile} from "music-metadata";
 
 export class UnbreakableStream {
@@ -140,7 +139,7 @@ export class UnbreakableStream {
         }
 
         const track = tracks[currentTrackIndex];
-        const trackAbsolutePath = path.normalize(MEDIA_ROOT_PATH + track.location);
+        const trackAbsolutePath = path.normalize(track.location);
         streamInfo.currentTrackMetadata = await parseFile(trackAbsolutePath)
         console.log(`[Stream ${stream.id}] Playing track ${currentTrackIndex + 1}/${tracks.length}: ${path.basename(trackAbsolutePath)}`);
 
