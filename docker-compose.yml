@@ -95,8 +95,6 @@ services:
     image: redis:alpine
     container_name: redis
     restart: always
-    ports:
-      - "6379:6379"
     networks:
       - common
 
