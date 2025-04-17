@@ -7,6 +7,7 @@ services:
     command: npm run start:start-express-prod
     restart: always
     environment:
+      - EXPRESS_PORT=3000
       - STREAM_FFMPEG_BIN=ffmpeg
       - DATABASE_NAME=spotless_radio
       - DATABASE_USERNAME=spotless
@@ -94,6 +95,8 @@ services:
     image: redis:alpine
     container_name: redis
     restart: always
+    ports:
+      - "6379:6379"
     networks:
       - common
 

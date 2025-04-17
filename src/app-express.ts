@@ -1,4 +1,5 @@
 import express, {Express} from "express";
+import 'express-async-errors';
 import fileUpload from "express-fileupload";
 import {createServer, Server as ServerHTTP} from "node:http";
 import {sequelize} from "./database";
@@ -10,26 +11,36 @@ import authUserRoutes from "./routes/AuthUserRoutes";
 import trackRoutes from "./routes/TrackRoutes";
 import playlistRoutes from "./routes/PlaylistRoutes";
 import streamRoutes from "./routes/StreamRoutes";
+import {
+    genericExpressErrorHandler,
+    processException,
+    processRejection
+} from "./routes/middleware/ErrorHandlerMiddleware";
 
 
-export const AppExpress: Express = express();
-export const AppServer: ServerHTTP = createServer(AppExpress);
+process.on('unhandledRejection', processRejection);
+process.on('uncaughtException', processException);
 
+const AppExpress: Express = express();
+const AppServer: ServerHTTP = createServer(AppExpress);
 
-AppExpress.use(fileUpload()); // Enable file uploads
+AppExpress.use(fileUpload());
 AppExpress.use(express.json());
 AppExpress.use(CORSMiddleware);
-AppExpress.use(express.urlencoded({extended: true})); // Parse form fields
+AppExpress.use(express.urlencoded({extended: true}));
 
+AppExpress.use('/auth/role', authRoleRoutes);
+AppExpress.use('/auth', authRoutes);
+AppExpress.use('/auth/user', authUserRoutes);
+AppExpress.use('/track', trackRoutes);
+AppExpress.use('/playlist', playlistRoutes);
+AppExpress.use('/stream', streamRoutes);
 
-AppExpress.use(authRoleRoutes);
-AppExpress.use(authRoutes);
-AppExpress.use(authUserRoutes);
-AppExpress.use(trackRoutes);
-AppExpress.use(playlistRoutes);
-AppExpress.use(streamRoutes);
+AppExpress.use(genericExpressErrorHandler);
 
-
-sequelize.sync({force: false}).finally(() => {
-    AppServer.listen(3000);
+sequelize.authenticate().finally(() => {
+    const port: string | number = process.env.EXPRESS_PORT || 3000
+    AppServer.listen(port, () => {
+        console.log(`Server running on port ${port}`);
+    });
 });

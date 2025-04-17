@@ -6,7 +6,7 @@ import {Router} from "express";
 
 const router: Router = Router();
 
-router.get('/playlist/list', [AuthMiddleware, IsAdminMiddleware], async (request, response) => {
+router.get('/list', [AuthMiddleware, IsAdminMiddleware], async (request, response) => {
     try {
         response.status(200);
         response.send((await Playlist.findAll()).map(p => p.dataValues));
@@ -16,37 +16,22 @@ router.get('/playlist/list', [AuthMiddleware, IsAdminMiddleware], async (request
     }
 });
 
-router.get('/playlist/details', [AuthMiddleware, IsAdminMiddleware], async (request, response) => {
-    try {
-        response.status(200);
-        response.send((await Playlist.findOne({where: {id: request.query.id}})).dataValues);
-    } catch (e) {
-        response.status(500);
-        response.send({message: e.toString()});
-    }
+router.get('/details', [AuthMiddleware, IsAdminMiddleware], async (request, response) => {
+    response.status(200);
+    response.send((await Playlist.findByPk(request.query.id)).dataValues);
 });
 
-router.post('/playlist/create', [AuthMiddleware, IsAdminMiddleware], async (request, response) => {
-    try {
-        await createPlaylist(request.body);
-        response.status(200);
-        response.send({message: 'Created'});
-    } catch (e) {
-        response.status(500);
-        response.send({message: e.toString()});
-    }
+router.post('/create', [AuthMiddleware, IsAdminMiddleware], async (request, response) => {
+    await createPlaylist(request.body);
+    response.status(200);
+    response.send({message: 'Created'});
 });
 
 
-router.post('/playlist/update', [AuthMiddleware, IsAdminMiddleware], async (request, response) => {
-    try {
-        await updatePlaylist(request.body);
-        response.status(200);
-        response.send({message: 'Updated'});
-    } catch (e) {
-        response.status(500);
-        response.send({message: e.toString()});
-    }
+router.post('/update', [AuthMiddleware, IsAdminMiddleware], async (request, response) => {
+    await updatePlaylist(request.body);
+    response.status(200);
+    response.send({message: 'Updated'});
 })
 
 

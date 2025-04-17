@@ -1,9 +1,9 @@
-import {ActiveStreamInfo} from "../stream/ActiveStreamInfo";
+import {StreamInfoBundle} from "../stream/types";
 import {getClient} from "./client";
 import {STREAM_STORE} from "../config/redis";
 
 
-export async function storeStreamInfo(streamInfo: ActiveStreamInfo) {
+export async function storeStreamInfo(streamInfo: StreamInfoBundle) {
     const client = await getClient();
     client.set(`${STREAM_STORE}:${streamInfo.streamId}`, JSON.stringify(streamInfo))
 }
@@ -15,7 +15,7 @@ export async function getStreamInfo(streamId: string) {
 }
 
 
-export async function getALlStreamInfo() {
+export async function getAllStreamInfo() {
     const client = await getClient();
     const streamKeys = await client.keys(`${STREAM_STORE}:*`);
     return (await client.mGet(streamKeys)).map(d => JSON.parse(d));

@@ -7,7 +7,7 @@ import {Router} from "express";
 
 const router: Router = Router();
 
-router.post('/auth/sign-in', async (request, response) => {
+router.post('/sign-in', async (request, response) => {
     let responseStat: number;
     let responseData: any;
     try {
@@ -22,27 +22,18 @@ router.post('/auth/sign-in', async (request, response) => {
             responseData = JWTTokenGenerate(await user.toJSON());
         }
     } catch (e) {
-        responseStat = e instanceof UserNotFoundError ? 417 : 500;
+        responseStat = e instanceof UserNotFoundError ? 404 : 500;
         responseData = {message: e.toString()}
     }
     response.status(responseStat);
     response.send(responseData);
 });
 
-router.post('/auth/sign-up', async (request, response) => {
-    let responseStat: number;
-    let responseData: any;
-    try {
-        const user: AuthUser = await createUserSignUp({...request.body});
-        const authToken = JWTTokenGenerate(await user.toJSON())
-        responseStat = 200;
-        responseData = authToken;
-    } catch (e) {
-        responseStat = 500;
-        responseData = {message: e.toString()};
-    }
-    response.status(responseStat);
-    response.send(responseData);
+router.post('/sign-up', async (request, response) => {
+    const user: AuthUser = await createUserSignUp({...request.body});
+    const authToken = JWTTokenGenerate(await user.toJSON())
+    response.status(200);
+    response.send(authToken);
 });
 
 

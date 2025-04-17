@@ -5,16 +5,18 @@
   "scripts": {
     "start:start-express-dev": "nodemon ./src/app-express.ts",
     "start:start-stream-dev": "nodemon ./src/app-stream.ts",
-    "start:start-express-prod": "nodemon ./dist/app-express.js",
-    "start:start-stream-prod": "nodemon ./dist/app-stream.js",
+    "start:start-express-prod": "node ./dist/app-express.js",
+    "start:start-stream-prod": "node ./dist/app-stream.js",
     "start:build": "rimraf ./dist && tsc",
     "start:migrations": "nodemon ./src/tools/migrate.ts"
   },
   "keywords": [],
   "dependencies": {
     "@reactivex/rxjs": "^6.6.7",
+    "@types/uuid": "^10.0.0",
     "bcryptjs": "^3.0.2",
     "express": "^4.19.2",
+    "express-async-errors": "^3.1.1",
     "express-fileupload": "^1.5.1",
     "ioredis": "^5.2.4",
     "js-sha512": "^0.9.0",
@@ -29,7 +31,8 @@
     "sequelize": "^6.37.7",
     "sequelize-cli-typescript": "^3.2.0-c",
     "sequelize-typescript": "^2.1.6",
-    "socket.io": "^4.5.2"
+    "socket.io": "^4.5.2",
+    "uuid": "^11.1.0"
   },
   "devDependencies": {
     "@types/express": "5.0.1",

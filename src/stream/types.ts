@@ -4,14 +4,20 @@ import {Playlist} from "../database/models/Playlist";
 import {IAudioMetadata} from "music-metadata";
 
 
-export interface ActiveStreamInfo {
+export interface StreamInfoBundle {
     streamId: string;
-    process: ChildProcess;
-    currentTrackIndex: number;
+    currentTrackId: string;
     currentTrackMetadata: IAudioMetadata;
-    currentEncoder: ChildProcess;
     playlist: Playlist;
-    audioBuffer: PassThrough;
     startTime: Date;
-    lastError: Error;
+    lastError: Error | string;
 }
+
+
+export interface StreamProcessBundle {
+    buffer: PassThrough;
+    encoder: ChildProcess;
+    output: ChildProcess;
+}
+
+export type StreamEventHandler = (streamInfo: StreamInfoBundle) => any;

@@ -1,91 +1,53 @@
 import {AuthMiddleware, IsAdminMiddleware} from "./middleware/AuthMiddleware";
-import {startStreams, stopStreams} from "../redis/stream-pub";
 import {Stream} from "../database/models/Stream";
 import {Router} from "express";
-import {getALlStreamInfo} from "../redis/stream-store";
+import {getAllStreamInfo} from "../redis/stream-store";
+import {streamRequest} from "../redis/stream";
+import {STREAMS_CHANNEL} from "../config/redis";
 
 
 const router: Router = Router();
 
 
-router.get('/stream/list', [AuthMiddleware, IsAdminMiddleware], async (request, response) => {
-    try {
-        const streams: Stream[] = await Stream.findAll();
-        response.status(200);
-        response.send(streams.map(s => s.dataValues));
-    } catch (e) {
-        response.status(500);
-        response.send({message: e.toString()});
-    }
+router.get('/list', [AuthMiddleware, IsAdminMiddleware], async (request, response) => {
+    const streams: Stream[] = await Stream.findAll();
+    response.status(200);
+    response.send(streams.map(s => s.dataValues));
 });
 
-router.get('/stream/stats', [AuthMiddleware, IsAdminMiddleware], async (request, response) => {
-    try {
-        response.status(200);
-        response.send(await getALlStreamInfo());
-    } catch (e) {
-        response.status(500);
-        response.send({message: e.toString()});
-    }
+router.get('/stats', [AuthMiddleware, IsAdminMiddleware], async (request, response) => {
+    response.status(200);
+    response.send(await getAllStreamInfo());
 });
 
-router.post('/stream/create', [AuthMiddleware, IsAdminMiddleware], async (request, response) => {
-    try {
-        await Stream.create(request.body);
-        response.status(200);
-        response.send({message: "Stream created!"});
-    } catch (e) {
-        response.status(500);
-        response.send({message: e.toString()});
-    }
+router.post('/create', [AuthMiddleware, IsAdminMiddleware], async (request, response) => {
+    await Stream.create(request.body);
+    response.status(200);
+    response.send({message: "Stream created!"});
 });
 
-router.put('/stream/update', [AuthMiddleware, IsAdminMiddleware], async (request, response) => {
-    try {
-        const stream = await Stream.findOne({where: {id: request.body.id}});
-        await stream.update(request.body);
-        response.status(200);
-        response.send({message: "Stream updated!"})
-    } catch (e) {
-        response.status(500);
-        response.send({message: e.toString()});
-    }
+router.put('/update', [AuthMiddleware, IsAdminMiddleware], async (request, response) => {
+    const stream = await Stream.findByPk(request.body.id);
+    await stream.update(request.body);
+    response.status(200);
+    response.send({message: "Stream updated!"})
 });
 
-router.delete('/stream/delete', [AuthMiddleware, IsAdminMiddleware], async (request, response) => {
-    try {
-        await Stream.destroy({where: {id: request.body.streamIds}});
-        await stopStreams(request.body.streamIds);
-        response.status(200);
-        response.send({message: "Streams deleted!"});
-    } catch (e) {
-        response.status(500);
-        response.send({message: e.toString()});
-    }
+router.delete('/delete', [AuthMiddleware, IsAdminMiddleware], async (request, response) => {
+    await Stream.destroy({where: {id: request.body.streamIds}});
+    await streamRequest(STREAMS_CHANNEL, {streamIds: request.body.streamIds, action: 'stop'})
+    response.status(200);
+    response.send({message: "Streams deleted!"});
 });
 
-router.post('/stream/start', [AuthMiddleware, IsAdminMiddleware], async (request, response) => {
-    try {
-        await startStreams(request.body.streamIds);
-        response.status(200);
-        response.send({message: 'Streams started!'});
-    } catch (e) {
-        response.status(500);
-        response.send({message: e.toString()});
-    }
+router.post('/action', [AuthMiddleware, IsAdminMiddleware], async (request, response) => {
+    const statuses = await streamRequest(STREAMS_CHANNEL, request.body, 20000);
+    response.status(200);
+    response.send({
+        message: 'Action performed',
+        action: request.body.action,
+        statuses: statuses,
+    });
 });
-
-
-router.post('/stream/stop', [AuthMiddleware, IsAdminMiddleware], async (request, response) => {
-    try {
-        await stopStreams(request.body.streamIds);
-        response.status(200);
-        response.send({message: 'Streams stopped!'});
-    } catch (e) {
-        response.status(500);
-        response.send({message: e.toString()});
-    }
-});
-
 
 export default router;

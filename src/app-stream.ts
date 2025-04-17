@@ -1,19 +1,28 @@
 import {streamManager} from "./stream/StreamManager";
 import {sequelize} from "./database";
-import {bindStreamEvents} from "./redis/stream-sub";
+import {streamResponder} from "./redis/stream";
+import {STREAMS_CHANNEL} from "./config/redis";
+import {Stream} from "./database/models/Stream";
 
-sequelize.sync({force: false}).finally(async () => {
-    await bindStreamEvents((streamIds) => {
-        for (const streamId of streamIds) {
-            streamManager.startStream(streamId).then(() => {
-                console.log(`[+] Started: ${streamId}`) // push progress
-            });
+
+sequelize.authenticate().finally(async () => {
+    const enabledStreams = await Stream.findAll({where: {enabled: true}});
+    for (const stream of enabledStreams) {
+        await streamManager.streamStart(stream.id);
+    }
+    // noinspection ES6MissingAwait
+    streamResponder(STREAMS_CHANNEL, async (payload) => {
+        const executorStatus = {};
+        if (payload.action === "start") {
+            for (const streamId of payload.streamIds) {
+                executorStatus[streamId] = await streamManager.streamStart(streamId);
+            }
         }
-    }, (streamIds) => {
-        for (const streamId of streamIds) {
-            streamManager.stopStream(streamId).then(() => {
-                console.log(`[-] Stopping: ${streamId}`) // push progress
-            });
+        if (payload.action === "stop") {
+            for (const streamId of payload.streamIds) {
+                executorStatus[streamId] = await streamManager.streamStop(streamId);
+            }
         }
+        return executorStatus;
     });
 });
