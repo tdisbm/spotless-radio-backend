@@ -15,8 +15,10 @@ RUN npm run start:build
 # ========== RUNTIME STAGE ==========
 FROM node:22.14-alpine AS runtime
 
-RUN apk add --no-cache ffmpeg libgomp expat
+# Install runtime dependencies
+RUN apk add --no-cache ffmpeg libgomp expat nmap
 RUN ffmpeg -version
+RUN nmap --version
 
 WORKDIR /app
 

@@ -5,7 +5,7 @@ import {STREAM_STORE} from "../config/redis";
 
 export async function storeStreamInfo(streamInfo: StreamInfoBundle) {
     const client = await getClient();
-    client.set(`${STREAM_STORE}:${streamInfo.streamId}`, JSON.stringify(streamInfo))
+    client.set(`${STREAM_STORE}:${streamInfo.cid}`, JSON.stringify(streamInfo))
 }
 
 

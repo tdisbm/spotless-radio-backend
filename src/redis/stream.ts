@@ -1,5 +1,5 @@
-import { v4 as uuidv4 } from 'uuid';
-import { getClient } from "./client";
+import {v4 as uuidv4} from 'uuid';
+import {getClient} from "./client";
 
 interface StreamMessage {
     payload: any;

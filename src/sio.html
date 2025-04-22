@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html>
+<head><title>Mic Stream</title></head>
+<body>
+<hr>
+<div>
+    <h4>Stream</h4>
+    <div>
+        <button onclick="openStream()">Open</button>
+    </div>
+    <div>
+        <button onclick="closeStream()">Close</button>
+    </div>
+</div>
+<hr>
+<div>
+    <h4>Playlist</h4>
+    <div>
+        <button onclick="playlistStart()">Start</button>
+    </div>
+    <div>
+        <button onclick="playlistPause()">Pause</button>
+    </div>
+    <div>
+        <button onclick="playlistResume()">Resume</button>
+    </div>
+    <div>
+        <button onclick="playlistStop()">stop</button>
+    </div>
+</div>
+<hr>
+<div>
+    <h4>Microphone</h4>
+    <div>
+        <button onclick="micStart()">Start</button>
+    </div>
+    <div>
+        <button onclick="micStop()">Stop</button>
+    </div>
+</div>
+<hr>
+
+<script src="https://cdn.socket.io/4.6.0/socket.io.min.js"></script>
+<script>
+    const socket = io('http://localhost:3030');
+    const streamId = '06c6e25d-7206-4e9d-baf0-2c1ce033f6e0';
+
+    async function openStream() {
+        socket.emit("stream:mixer:open", streamId)
+    }
+
+    async function closeStream() {
+        socket.emit("stream:mixer:close", streamId)
+    }
+
+    async function playlistStart() {
+        socket.emit("stream:player:open", streamId)
+    }
+
+    async function playlistStop() {
+        socket.emit("stream:player:close", streamId)
+    }
+
+    async function playlistPause() {
+        socket.emit("stream:player:pause", streamId)
+    }
+
+    async function playlistResume() {
+        socket.emit("stream:player:resume", streamId)
+    }
+
+    let processor, micStream;
+    async function micStart() {
+        micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        const context = new AudioContext({ sampleRate: 48000 });
+        const source = context.createMediaStreamSource(micStream);
+
+        processor = context.createScriptProcessor(4096, 1, 2); // mono input, stereo output
+        source.connect(processor);
+        processor.connect(context.destination);
+
+        function floatTo24BitPCM(float32Array) {
+            const buffer = new ArrayBuffer(float32Array.length * 3);
+            const view = new DataView(buffer);
+            for (let i = 0; i < float32Array.length; i++) {
+                let sample = Math.max(-1, Math.min(1, float32Array[i]));
+                let int = Math.floor(sample * 8388607); // 2^23 - 1
+                view.setUint8(i * 3 + 0, int & 0xFF);
+                view.setUint8(i * 3 + 1, (int >> 8) & 0xFF);
+                view.setUint8(i * 3 + 2, (int >> 16) & 0xFF);
+            }
+            return new Uint8Array(buffer);
+        }
+
+        processor.onaudioprocess = e => {
+            const input = e.inputBuffer.getChannelData(0); // mono
+            const stereo = new Float32Array(input.length * 2);
+            for (let i = 0; i < input.length; i++) {
+                stereo[i * 2] = input[i];       // L
+                stereo[i * 2 + 1] = input[i];   // R
+            }
+            const chunk = floatTo24BitPCM(stereo);
+            socket.emit('stream:mic:write', chunk);
+        };
+    }
+
+    function micStop() {
+        processor.disconnect();
+        micStream.disconnect();
+    }
+
+</script>
+</body>
+</html>

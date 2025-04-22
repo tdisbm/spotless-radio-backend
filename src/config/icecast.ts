@@ -1,2 +1,3 @@
 export const STREAM_FFMPEG_BIN: string = process.env.STREAM_FFMPEG_BIN || "D:\\workspace\\spotless-radio-backend\\vendor\\ffmpeg-7.1.1-essentials_build\\bin\\ffmpeg.exe";
-export const STREAM_BITRATE: string = process.env.STREAM_DEFAULT_BITRATE || "256k";
+export const STREAM_FFMPEG_BITRATE: string = process.env.STREAM_FFMPEG_BITRATE || "320k";
+export const STREAM_FFMPEG_SAMPLE_RATE: string = process.env.STREAM_FFMPEG_SAMPLE_RATE || "44100";

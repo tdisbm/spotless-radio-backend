@@ -8,7 +8,6 @@ services:
     restart: always
     environment:
       - EXPRESS_PORT=3000
-      - STREAM_FFMPEG_BIN=ffmpeg
       - DATABASE_NAME=spotless_radio
       - DATABASE_USERNAME=spotless
       - DATABASE_PASSWORD=hackme
@@ -35,6 +34,8 @@ services:
     restart: always
     environment:
       - STREAM_FFMPEG_BIN=ffmpeg
+      - STREAM_FFMPEG_BITRATE=320k
+      - STREAM_FFMPEG_SAMPLE_RATE=48000
       - DATABASE_NAME=spotless_radio
       - DATABASE_USERNAME=spotless
       - DATABASE_PASSWORD=hackme
@@ -43,8 +44,11 @@ services:
       - DATABASE_DIALECT=postgres
       - REDIS_HOST=redis
       - REDIS_PORT=6379
+    ports:
+      - "3030:3030"
     volumes:
       - ./media:/app/media
+      - /tmp:/tmp
     depends_on:
       - app-express
     networks:
@@ -87,6 +91,8 @@ services:
       - "6969:6969"
     volumes:
       - ./docker/conf/icecast.xml:/etc/icecast2/icecast.xml
+      - icecast-mounts:/etc/icecast2/mounts
+      - /tmp:/tmp
     restart: unless-stopped
     networks:
       - common
@@ -95,6 +101,8 @@ services:
     image: redis:alpine
     container_name: redis
     restart: always
+    ports:
+      - "6379:6379"
     networks:
       - common
 
@@ -102,6 +110,7 @@ services:
 volumes:
   media:
   postgres-data:
+  icecast-mounts:
 
 networks:
   common:

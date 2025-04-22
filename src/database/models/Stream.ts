@@ -83,4 +83,9 @@ export class Stream extends Model<Stream> {
     @BelongsTo(() => Playlist)
     declare playlist: NonAttribute<Playlist>;
     declare setPlaylist: BelongsToSetAssociationMixin<Playlist, Playlist["id"]>;
+
+
+    connectionUrl() {
+        return `icecast://${this.username}:${this.password}@${this.host}:${this.port}/${this.endpoint}`
+    }
 }

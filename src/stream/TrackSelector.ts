@@ -7,8 +7,8 @@ import {fetchStream} from "../database/repository/StreamRepository";
 
 export async function orderedTrackSelector(streamInfo: StreamInfoBundle) {
     const currentTrackId: string = streamInfo.currentTrackId;
-    const stream: Stream = await fetchStream(streamInfo.streamId);
-    const tracks: Track[] = await getTracksOrdered(stream.playlist.id);
+    const stream: Stream = await fetchStream(streamInfo.cid);
+    const tracks: Track[] = await getTracksOrdered(stream.playlistId);
     if (currentTrackId === null) {
         return tracks[0];
     }

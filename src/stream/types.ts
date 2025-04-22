@@ -1,23 +1,19 @@
-import {ChildProcess} from "node:child_process";
-import {PassThrough} from "stream";
-import {Playlist} from "../database/models/Playlist";
 import {IAudioMetadata} from "music-metadata";
+import {FifoSourceMixer} from "./component/source/FifoSourceMixer";
+import {FifoPlayerSource} from "./FifoPlayerSource";
+import {FifoMicSource} from "./FifoMicSource";
 
 
 export interface StreamInfoBundle {
-    streamId: string;
+    cid: string,
     currentTrackId: string;
     currentTrackMetadata: IAudioMetadata;
-    playlist: Playlist;
     startTime: Date;
     lastError: Error | string;
 }
 
-
-export interface StreamProcessBundle {
-    buffer: PassThrough;
-    encoder: ChildProcess;
-    output: ChildProcess;
+export interface MixerBundle {
+    mixer: FifoSourceMixer;
+    player: FifoPlayerSource;
+    mic: FifoMicSource;
 }
-
-export type StreamEventHandler = (streamInfo: StreamInfoBundle) => any;

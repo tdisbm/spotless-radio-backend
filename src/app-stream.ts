@@ -1,28 +1,49 @@
-import {streamManager} from "./stream/StreamManager";
 import {sequelize} from "./database";
-import {streamResponder} from "./redis/stream";
-import {STREAMS_CHANNEL} from "./config/redis";
-import {Stream} from "./database/models/Stream";
+import {createServer} from "node:http";
+import {Server as ServerHTTP} from "http";
+import {Server} from "socket.io";
+import {streamManager} from "./stream/StreamManager";
+
+
+const AppServer: ServerHTTP = createServer();
+const AppSocket: Server = new Server(AppServer, {
+    cors: {origin: '*'}
+});
 
 
 sequelize.authenticate().finally(async () => {
-    const enabledStreams = await Stream.findAll({where: {enabled: true}});
-    for (const stream of enabledStreams) {
-        await streamManager.streamStart(stream.id);
-    }
-    // noinspection ES6MissingAwait
-    streamResponder(STREAMS_CHANNEL, async (payload) => {
-        const executorStatus = {};
-        if (payload.action === "start") {
-            for (const streamId of payload.streamIds) {
-                executorStatus[streamId] = await streamManager.streamStart(streamId);
-            }
-        }
-        if (payload.action === "stop") {
-            for (const streamId of payload.streamIds) {
-                executorStatus[streamId] = await streamManager.streamStop(streamId);
-            }
-        }
-        return executorStatus;
+    const port: string = process.env.SIO_PORT || "3030";
+    AppServer.listen(port, () => {
+        console.log(`[SIO]: Running on port ${port}`);
+    });
+
+    AppSocket.on("connect", (socket) => {
+        socket.on("stream:mixer:open", async (streamId: string) => {
+            await streamManager.openMixer(streamId);
+        });
+
+        socket.on("stream:mixer:close", async (streamId: string) => {
+            await streamManager.closeMixer(streamId);
+        });
+
+        socket.on("stream:player:open", async (streamId: string) => {
+            await streamManager.openPlayer(streamId);
+        });
+
+        socket.on("stream:player:pause", async (streamId: string) => {
+            await streamManager.pausePlayer(streamId);
+        });
+
+        socket.on("stream:player:resume", async (streamId: string) => {
+            await streamManager.resumePlayer(streamId);
+        });
+
+        socket.on("stream:player:close", async (streamId: string) => {
+            await streamManager.closePlayer(streamId);
+        });
+
+        socket.on("stream:mic:write", async (event: { streamId: string, buffer: Buffer }) => {
+            await streamManager.writeMic(event.streamId, event.buffer);
+        });
     });
 });

@@ -24,10 +24,11 @@ process.on('uncaughtException', processException);
 const AppExpress: Express = express();
 const AppServer: ServerHTTP = createServer(AppExpress);
 
-AppExpress.use(fileUpload());
-AppExpress.use(express.json());
 AppExpress.use(CORSMiddleware);
-AppExpress.use(express.urlencoded({extended: true}));
+AppExpress.use(fileUpload());
+AppExpress.use(express.json({limit: "500mb"}));
+AppExpress.use(express.raw({limit: "500mb"}));
+AppExpress.use(express.urlencoded({limit: "500mb", extended: true}));
 
 AppExpress.use('/auth/role', authRoleRoutes);
 AppExpress.use('/auth', authRoutes);
@@ -41,6 +42,6 @@ AppExpress.use(genericExpressErrorHandler);
 sequelize.authenticate().finally(() => {
     const port: string | number = process.env.EXPRESS_PORT || 3000
     AppServer.listen(port, () => {
-        console.log(`Server running on port ${port}`);
+        console.log(`[Express]: Running on port ${port}`);
     });
 });

@@ -5,7 +5,7 @@ import path from "node:path";
 
 export async function uploadFiles(root: string, files: any) {
     if (!fs.existsSync(root)) {
-        fs.mkdirSync(root, { recursive: true });
+        fs.mkdirSync(root, {recursive: true});
     }
 
     const filePaths: string[] = [];
@@ -20,7 +20,7 @@ export async function uploadFiles(root: string, files: any) {
 
 export async function deleteFiles(filePaths: string[]) {
     const tempDir: string = './.temp'
-    const stagedFiles: {original: string; staged: string}[] = [];
+    const stagedFiles: { original: string; staged: string }[] = [];
     try {
         await fsPromises.mkdir(tempDir, {recursive: true});
         for (const file of filePaths) {
@@ -38,10 +38,10 @@ export async function deleteFiles(filePaths: string[]) {
     }
 }
 
-export async function renameFiles(renameOps: {id: string, oldPath: string; newName: string }[]) {
+export async function renameFiles(renameOps: { id: string, oldPath: string; newName: string }[]) {
     const renamedFiles: { id: string, from: string, to: string }[] = [];
     try {
-        for (const { id, oldPath, newName } of renameOps) {
+        for (const {id, oldPath, newName} of renameOps) {
             const oldPathDir = path.dirname(oldPath);
             const newPath = path.join(oldPathDir, newName);
 
@@ -62,7 +62,7 @@ export async function renameFiles(renameOps: {id: string, oldPath: string; newNa
         return renamedFiles;
     } catch (err) {
         // Rollback
-        for (const { from, to } of renamedFiles.reverse()) {
+        for (const {from, to} of renamedFiles.reverse()) {
             try {
                 await fsPromises.rename(to, from);
             } catch (rollbackErr) {
@@ -71,4 +71,8 @@ export async function renameFiles(renameOps: {id: string, oldPath: string; newNa
         }
         throw new Error(`Filesystem rename failed: ${err.message}`);
     }
+}
+
+export function createDirRecursive(path, recursive: boolean = true) {
+    fs.mkdirSync(path, {recursive});
 }
