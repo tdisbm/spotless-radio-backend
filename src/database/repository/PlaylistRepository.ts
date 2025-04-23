@@ -10,7 +10,7 @@ export async function createPlaylist(data: any) {
     try {
         const {["tracks"]: tracks, ...playlistData} = data
         const playlist = await Playlist.create(playlistData, {transaction});
-        await TrackPlaylist.bulkCreate(tracks.map( track => ({
+        await TrackPlaylist.bulkCreate(tracks.map(track => ({
             trackId: track.id,
             playlistId: playlist.id,
             sortOrder: track.sortOrder
@@ -32,7 +32,7 @@ export async function updatePlaylist(data: any) {
         const playlist = await Playlist.findOne(id);
         await playlist.update(playlistData as any, {transaction});
         await playlist.setTracks([])
-        await TrackPlaylist.bulkCreate(tracks.map( track => ({
+        await TrackPlaylist.bulkCreate(tracks.map(track => ({
             trackId: track.id,
             playlistId: playlist.id,
             sortOrder: track.sortOrder
@@ -49,18 +49,18 @@ export async function updatePlaylist(data: any) {
 
 export async function getTracksOrdered(playlistId: string, ordering: string = 'ASC') {
     return await Track.findAll({
-        attributes: { exclude: ['createdAt', 'updatedAt'] },
+        attributes: {exclude: ['createdAt', 'updatedAt']},
         include: [{
             model: Playlist,
             as: 'playlists',
-            where: { id: playlistId },
+            where: {id: playlistId},
             attributes: [],
             through: {
                 attributes: ['sortOrder']
             }
         }],
         order: [
-            [{ model: Playlist, as: 'playlists' }, TrackPlaylist, 'sortOrder', ordering],
+            [{model: Playlist, as: 'playlists'}, TrackPlaylist, 'sortOrder', ordering],
             ['location', ordering]
         ]
     });

@@ -35,13 +35,11 @@ export class Stream extends Model<Stream> {
 
     @AllowNull(false)
     @NotNull
-    @Unique
     @Column({type: DataType.STRING})
     host: string;
 
     @AllowNull(false)
     @NotNull
-    @Unique
     @Column({type: DataType.INTEGER})
     port: number;
 
@@ -53,13 +51,11 @@ export class Stream extends Model<Stream> {
 
     @AllowNull(false)
     @NotNull
-    @Unique
     @Column({type: DataType.STRING})
     username: string;
 
     @AllowNull(false)
     @NotNull
-    @Unique
     @Column({type: DataType.STRING})
     password: string;
 

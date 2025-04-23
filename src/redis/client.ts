@@ -9,7 +9,7 @@ export async function getClient() {
         return clientInstance;
     }
 
-    const client = createClient({ url: REDIS_URL });
+    const client = createClient({url: REDIS_URL});
 
     client.on('connect', () => {
         console.log('🟢 Redis client connecting...');

@@ -11,10 +11,18 @@ class StreamManager {
 
     async openMixer(streamId: string) {
         const stream: Stream = await Stream.findByPk(streamId);
-        const bundle: MixerBundle = this.bundles.get(stream.id) || this.createMixerBundle(stream);
-        this.bundles.set(streamId, bundle);
-        console.log(`Open mixer ${streamId}`)
-        bundle.mixer.open();
+        const isCreated: boolean = !this.bundles.has(stream.id)
+        const bundle: MixerBundle = isCreated ?
+            this.createMixerBundle(stream) :
+            this.bundles.get(stream.id);
+        if (isCreated) {
+            bundle.mixer.open();
+            this.bundles.set(streamId, bundle);
+        }
+        return {
+            isCreated,
+            bundle,
+        };
     }
 
     async closeMixer(streamId: string) {
@@ -28,11 +36,15 @@ class StreamManager {
         }
     }
 
-    async openPlayer(streamId: string) {
+    async openPlayer(streamId: string, trackId: string = null) {
         const bundle: MixerBundle = this.bundles.get(streamId);
         if (bundle) {
             console.log(`Open player ${streamId}`);
-            await bundle.player.open();
+            if (trackId) {
+                await bundle.player.playNext(trackId)
+            } else {
+                await bundle.player.open();
+            }
         }
     }
 

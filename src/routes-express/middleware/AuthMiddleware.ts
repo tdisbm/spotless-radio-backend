@@ -1,14 +1,12 @@
-import {JWTTokenVerify} from "../../utils/AuthUtils";
 import {AuthUser} from "../../database/models/AuthUser";
-import {isAdmin} from "../../service/AuthUserService";
+import {isAdmin, userFromJWT} from "../../service/AuthUserService";
 
 
 export async function IsAdminMiddleware(request: any, response: any, next: any) {
     try {
         const authHeader = request.headers.authorization;
         const token = authHeader.split(" ")[1];
-        const tokenDecoded = JWTTokenVerify(token);
-        const user: AuthUser = await AuthUser.findOne(tokenDecoded.id)
+        const user: AuthUser = await userFromJWT(token);
         if (!(await isAdmin(user))) {
             throw Error("You're not an admin! Nice try haha!")
         }
@@ -26,8 +24,7 @@ export async function AuthMiddleware(request: any, response: any, next: any) {
             return response.status(401).json({message: "Unauthorized: No token provided"});
         }
         const token = authHeader.split(" ")[1];
-        const tokenDecoded: any = JWTTokenVerify(token);
-        const user: AuthUser = await AuthUser.findOne(tokenDecoded.id)
+        const user: AuthUser = await userFromJWT(token);
         Object.assign(request, {user});
         next();
     } catch (error: any) {

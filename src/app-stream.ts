@@ -2,7 +2,8 @@ import {sequelize} from "./database";
 import {createServer} from "node:http";
 import {Server as ServerHTTP} from "http";
 import {Server} from "socket.io";
-import {streamManager} from "./stream/StreamManager";
+import {SIOUserMiddleware} from "./routes-sio/middleware/SIOUserMiddleware";
+import {registerStreamHandler} from "./routes-sio/stream";
 
 
 const AppServer: ServerHTTP = createServer();
@@ -11,39 +12,22 @@ const AppSocket: Server = new Server(AppServer, {
 });
 
 
+AppSocket.use(SIOUserMiddleware);
+AppSocket.on('error', (error) => {
+    console.error('[SIO err]:', error);
+});
+
+
 sequelize.authenticate().finally(async () => {
     const port: string = process.env.SIO_PORT || "3030";
-    AppServer.listen(port, () => {
-        console.log(`[SIO]: Running on port ${port}`);
-    });
+    AppServer.listen(port, () => console.log(`[SIO]: Running on port ${port}`));
+    AppSocket.on("connect", async (socket) => {
+        console.log(`[SIO] Connected ${socket.id}`);
 
-    AppSocket.on("connect", (socket) => {
-        socket.on("stream:mixer:open", async (streamId: string) => {
-            await streamManager.openMixer(streamId);
-        });
+        registerStreamHandler(AppSocket, socket);
 
-        socket.on("stream:mixer:close", async (streamId: string) => {
-            await streamManager.closeMixer(streamId);
-        });
-
-        socket.on("stream:player:open", async (streamId: string) => {
-            await streamManager.openPlayer(streamId);
-        });
-
-        socket.on("stream:player:pause", async (streamId: string) => {
-            await streamManager.pausePlayer(streamId);
-        });
-
-        socket.on("stream:player:resume", async (streamId: string) => {
-            await streamManager.resumePlayer(streamId);
-        });
-
-        socket.on("stream:player:close", async (streamId: string) => {
-            await streamManager.closePlayer(streamId);
-        });
-
-        socket.on("stream:mic:write", async (event: { streamId: string, buffer: Buffer }) => {
-            await streamManager.writeMic(event.streamId, event.buffer);
+        socket.on("disconnect", () => {
+            console.log(`[SIO] Client disconnected ${socket.id}`);
         });
     });
 });

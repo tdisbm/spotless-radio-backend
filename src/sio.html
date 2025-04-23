@@ -1,14 +1,18 @@
 <!DOCTYPE html>
-<html>
+<html lang="HTML">
 <head><title>Mic Stream</title></head>
 <body>
 <hr>
 <div>
     <h4>Stream</h4>
     <div>
-        <button onclick="openStream()">Open</button>
+        <label for="stream-name">Stream id</label>
+        <div>
+            <input id="stream-name" style="width: 90%">
+        </div>
     </div>
     <div>
+        <button onclick="openStream()">Open</button>&nbsp;
         <button onclick="closeStream()">Close</button>
     </div>
 </div>
@@ -31,10 +35,9 @@
 <hr>
 <div>
     <h4>Microphone</h4>
+    <div id="mic-enabled">No</div>
     <div>
-        <button onclick="micStart()">Start</button>
-    </div>
-    <div>
+        <button onclick="micStart()">Start</button>&nbsp;
         <button onclick="micStop()">Stop</button>
     </div>
 </div>
@@ -42,37 +45,67 @@
 
 <script src="https://cdn.socket.io/4.6.0/socket.io.min.js"></script>
 <script>
-    const socket = io('http://localhost:3030');
-    const streamId = '06c6e25d-7206-4e9d-baf0-2c1ce033f6e0';
+    const socket = io('http://localhost:3030', {
+        transports: ['websocket', 'polling', 'flashsocket'],
+        auth: {
+            token:
+                "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY2Y2M4N2JmLTg1NDItNGFlMy04MjU0LTM3Mzg2OTVhMzEwOCIs" +
+                "InVzZXJuYW1lIjoiYWRtaW4iLCJlbWFpbCI6InZsYWQuY2VyY2hlekByYWRpb3JlbGF4LnN0cmVzcyIsImZpcnN0TmFtZSI6I" +
+                "lZsYWQiLCJsYXN0TmFtZSI6IkNlcmNoZXoiLCJtZXRhIjp7fSwiY3JlYXRlZEF0IjoiMjAyNS0wNC0xN1QxMDo0OToyNy4yOD" +
+                "laIiwidXBkYXRlZEF0IjoiMjAyNS0wNC0xN1QxMDo0OToyNy4yODlaIiwicm9sZXMiOlt7ImlkIjoiMWNhZTRlNjgtNjAyYi0" +
+                "0ZTVkLTk1Y2UtMjBkOWE2ODg2NTliIiwicm9sZSI6IkFETUlOIn1dLCJpYXQiOjE3NDQ4ODc0ODAsImV4cCI6MTc0NjA5NzA4" +
+                "MH0.w83rtFN23ABU7f8drf8jeYqfp8UFz3iPiQek-6ZjIew"
+        }
+    });
+
+    socket.on("stream:player:info", (info) => {
+        console.log(info);
+    });
+
+    socket.on("stream:mic:info", (info) => {
+        console.log(info);
+        if (info) {
+            document.getElementById('mic-enabled').textContent = 'YES!';
+        } else {
+            document.getElementById('mic-enabled').textContent = 'No!';
+        }
+    });
 
     async function openStream() {
+        const streamId = document.getElementById('stream-name').value
         socket.emit("stream:mixer:open", streamId)
     }
 
     async function closeStream() {
+        const streamId = document.getElementById('stream-name').value
         socket.emit("stream:mixer:close", streamId)
     }
 
     async function playlistStart() {
-        socket.emit("stream:player:open", streamId)
+        const streamId = document.getElementById('stream-name').value
+        socket.emit("stream:player:open", streamId, null)
     }
 
     async function playlistStop() {
+        const streamId = document.getElementById('stream-name').value
         socket.emit("stream:player:close", streamId)
     }
 
     async function playlistPause() {
+        const streamId = document.getElementById('stream-name').value
         socket.emit("stream:player:pause", streamId)
     }
 
     async function playlistResume() {
+        const streamId = document.getElementById('stream-name').value
         socket.emit("stream:player:resume", streamId)
     }
 
     let processor, micStream;
+
     async function micStart() {
-        micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        const context = new AudioContext({ sampleRate: 48000 });
+        micStream = await navigator.mediaDevices.getUserMedia({audio: true});
+        const context = new AudioContext({sampleRate: 48000});
         const source = context.createMediaStreamSource(micStream);
 
         processor = context.createScriptProcessor(4096, 1, 2); // mono input, stereo output
@@ -85,7 +118,7 @@
             for (let i = 0; i < float32Array.length; i++) {
                 let sample = Math.max(-1, Math.min(1, float32Array[i]));
                 let int = Math.floor(sample * 8388607); // 2^23 - 1
-                view.setUint8(i * 3 + 0, int & 0xFF);
+                view.setUint8(i * 3, int & 0xFF);
                 view.setUint8(i * 3 + 1, (int >> 8) & 0xFF);
                 view.setUint8(i * 3 + 2, (int >> 16) & 0xFF);
             }
@@ -100,7 +133,8 @@
                 stereo[i * 2 + 1] = input[i];   // R
             }
             const chunk = floatTo24BitPCM(stereo);
-            socket.emit('stream:mic:write', chunk);
+            const streamId = document.getElementById('stream-name').value
+            socket.emit('stream:mic:write', {streamId: streamId, buffer: chunk});
         };
     }
 

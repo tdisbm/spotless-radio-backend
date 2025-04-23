@@ -1,7 +1,5 @@
 import {FifoSource} from './component/source/FifoSource';
 import {orderedTrackSelector} from './TrackSelector';
-import {StreamInfoBundle} from './types';
-import {parseFile} from 'music-metadata';
 import {Track} from "../database/models/Track";
 import {ChildProcessWithoutNullStreams, spawn} from "node:child_process";
 import {SourceConfig} from "./component/types";
@@ -15,35 +13,62 @@ interface TrackOptions {
 
 export class FifoPlayerSource extends FifoSource {
     private encoder: ChildProcessWithoutNullStreams | null = null;
-    private streamInfoBundle: StreamInfoBundle;
 
     constructor(settings: SourceConfig) {
         super(settings);
         this.buffer.setOnStarve(async () => await this.playNext());
     }
 
-    async open() {
-        this.streamInfoBundle = {
-            cid: this.config.cid,
-            currentTrackId: null,
-            currentTrackMetadata: null,
-            startTime: new Date(),
-            lastError: null,
-        };
+    public async open() {
         this.buffer.resume();
     }
 
-    private async playNext() {
-        const track = await orderedTrackSelector(this.streamInfoBundle);
+    public pause() {
+        this.buffer.pause();
+    }
+
+    public resume() {
+        this.buffer.resume();
+    }
+
+    public close() {
+        this.buffer.flush();
+        this.buffer.pause();
+        if (this.encoder) {
+            this.encoder.kill('SIGTERM');
+            this.encoder = null;
+        }
+    }
+
+    public write(buffer: any) {
+        this.buffer.feed(buffer);
+    }
+
+    public args(): string[] {
+        return [
+            '-f', String(this.config.encoding),
+            '-ar', String(this.config.sampleRate),
+            '-ac', String(this.config.channels),
+            '-i', String(this.fifo),
+        ];
+    }
+
+    public async playNext(trackId: string = null) {
+        const currentTrackId: string = trackId || this.notifier.getValue()?.currentTrack?.id;
+        const track: Track = await orderedTrackSelector(this.config.cid, currentTrackId);
         if (!track) {
+            this.notifier.next(null);
             this.close();
             console.log('[AudioStreamer] Playlist finished.');
             return;
         }
 
-        this.streamInfoBundle.currentTrackId = track.id;
-        this.streamInfoBundle.currentTrackMetadata = await parseFile(track.location);
+        this.notifier.next({
+            currentTrack: track.dataValues,
+            startTime: new Date(),
+        });
 
+        this.buffer.flush();
         this.encoder = spawn(
             this.config.audioProcBin,
             this.buildEncoderArgs(track, {
@@ -61,37 +86,6 @@ export class FifoPlayerSource extends FifoSource {
         });
     }
 
-    pause() {
-        this.buffer.pause();
-    }
-
-    resume() {
-        this.buffer.resume();
-    }
-
-    close() {
-        this.streamInfoBundle = null;
-        this.buffer.flush();
-        this.buffer.pause();
-        if (this.encoder) {
-            this.encoder.kill('SIGTERM');
-            this.encoder = null;
-        }
-    }
-
-    write(buffer: any) {
-        this.buffer.feed(buffer);
-    }
-
-    args(): string[] {
-        return [
-            '-f', String(this.config.encoding),
-            '-ar', String(this.config.sampleRate),
-            '-ac', String(this.config.channels),
-            '-i', String(this.fifo),
-        ];
-    }
-
     private buildEncoderArgs(track: Track, options: TrackOptions): string[] {
         const args: string[] = [
             '-hide_banner',
@@ -102,10 +96,7 @@ export class FifoPlayerSource extends FifoSource {
         }
         args.push('-i', track.location);
 
-        const filters: string[] = [
-            // 'aresample=async=1:min_hard_comp=0.150:first_pts=0',
-            // 'asetpts=N/SR/TB'
-        ];
+        const filters: string[] = [];
         if (options?.fadeInSec) {
             filters.push(`afade=t=in:st=0:d=${options.fadeInSec}`);
         }

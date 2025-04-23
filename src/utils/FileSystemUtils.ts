@@ -1,6 +1,7 @@
 import * as fs from "fs";
 import * as fsPromises from "fs/promises";
 import path from "node:path";
+import {spawnSync} from "node:child_process";
 
 
 export async function uploadFiles(root: string, files: any) {
@@ -9,12 +10,20 @@ export async function uploadFiles(root: string, files: any) {
     }
 
     const filePaths: string[] = [];
-    for (const file of files) {
-        const fileName = file.name;
-        const savePath = path.join(root, fileName);
-        await file.mv(savePath);
-        filePaths.push(savePath);
+    try {
+        for (const file of files) {
+            const fileName = file.name;
+            const savePath = path.join(root, fileName);
+            await file.mv(savePath);
+            filePaths.push(savePath);
+        }
+    } catch (e) {
+        for (const path of filePaths) {
+            fs.unlinkSync(path);
+        }
+        throw e;
     }
+
     return filePaths;
 }
 
@@ -75,4 +84,11 @@ export async function renameFiles(renameOps: { id: string, oldPath: string; newN
 
 export function createDirRecursive(path, recursive: boolean = true) {
     fs.mkdirSync(path, {recursive});
+}
+
+export function createFifo(fifoPath: string) {
+    createDirRecursive(path.dirname(fifoPath));
+    if (!fs.existsSync(fifoPath)) {
+        spawnSync('mkfifo', [fifoPath]);
+    }
 }

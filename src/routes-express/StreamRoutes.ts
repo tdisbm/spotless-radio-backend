@@ -1,9 +1,9 @@
 import {AuthMiddleware, IsAdminMiddleware} from "./middleware/AuthMiddleware";
 import {Stream} from "../database/models/Stream";
 import {Router} from "express";
-import {getAllStreamInfo} from "../redis/stream-store";
 import {streamRequest} from "../redis/stream";
 import {STREAMS_CHANNEL} from "../config/redis";
+import {read} from "../redis/stream-store";
 
 
 const router: Router = Router();
@@ -17,7 +17,7 @@ router.get('/list', [AuthMiddleware, IsAdminMiddleware], async (request, respons
 
 router.get('/stats', [AuthMiddleware, IsAdminMiddleware], async (request, response) => {
     response.status(200);
-    response.send(await getAllStreamInfo());
+    response.send(await read());
 });
 
 router.post('/create', [AuthMiddleware, IsAdminMiddleware], async (request, response) => {

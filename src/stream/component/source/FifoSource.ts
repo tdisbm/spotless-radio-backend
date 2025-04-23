@@ -1,21 +1,22 @@
+import fs from "fs";
 import path from "node:path";
 import {Source} from "./Source";
-import {createDirRecursive} from "../../../utils/FileSystemUtils";
-import fs from "fs";
-import {spawnSync} from "node:child_process";
+import {createFifo} from "../../../utils/FileSystemUtils";
 import {FifoAudioWriter} from "../FifoAudioWriter";
 import {SourceConfig} from "../types";
+import {BehaviorSubject} from "rxjs";
 
 
 export abstract class FifoSource implements Source {
-    public name: string;
     public fifo: string;
+    public notifier: BehaviorSubject<any>;
     protected audio
     protected buffer: FifoAudioWriter;
 
     protected constructor(public config: SourceConfig) {
         this.fifo = path.join(`/tmp/stream/${this.config.cid}`, `${this.config.name}.pcm`);
-        this.createFifo(path.join(this.fifo));
+        createFifo(path.join(this.fifo));
+        this.notifier = new BehaviorSubject<any>(null);
         this.buffer = new FifoAudioWriter({
             fifo: this.fifo,
             sampleRate: this.config.sampleRate,
@@ -31,15 +32,19 @@ export abstract class FifoSource implements Source {
         fs.unlinkSync(this.fifo);
     }
 
-    private createFifo(fifoPath: string) {
-        createDirRecursive(path.dirname(fifoPath));
-        if (!fs.existsSync(fifoPath)) {
-            spawnSync('mkfifo', [fifoPath]);
-        }
+    public async fadeIn(duration: number, volume: number) {
+        await this.buffer.fadeIn(duration, volume);
+    }
+
+    public async fadeOut(duration: number, volume: number) {
+        await this.buffer.fadeOut(duration, volume);
     }
 
     abstract write(buffer: any): void
+
     abstract open(): void
+
     abstract close(): void
+
     abstract args(): string[]
 }

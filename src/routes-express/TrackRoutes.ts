@@ -2,8 +2,6 @@ import {AuthMiddleware, IsAdminMiddleware} from "./middleware/AuthMiddleware";
 import {Request, Response, Router} from "express";
 import {createTracks, deleteTracks, renameTracks} from "../service/TrackService";
 import {Track} from "../database/models/Track";
-import path from "node:path";
-import {parseFile} from "music-metadata";
 
 
 const router: Router = Router();
@@ -28,15 +26,7 @@ router.put('/rename', [AuthMiddleware, IsAdminMiddleware], async (req: Request, 
 
 router.get('/list', [AuthMiddleware, IsAdminMiddleware], async (req: Request, res: Response) => {
     const tracks: Track[] = await Track.findAll();
-    const tracksData: any[] = [];
-    for (const track of tracks) {
-        tracksData.push({
-            ...track.dataValues,
-            filename: path.basename(track.location),
-            meta: await parseFile(track.location)
-        })
-    }
-    res.status(200).json(tracksData);
+    res.status(200).json(tracks.map(t => t.dataValues));
 });
 
 

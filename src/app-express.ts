@@ -3,19 +3,16 @@ import 'express-async-errors';
 import fileUpload from "express-fileupload";
 import {createServer, Server as ServerHTTP} from "node:http";
 import {sequelize} from "./database";
-import {CORSMiddleware} from "./routes/middleware/CORSMiddleware";
+import {CORSMiddleware} from "./routes-express/middleware/CORSMiddleware";
 
-import authRoleRoutes from "./routes/AuthRoleRoutes";
-import authRoutes from "./routes/AuthRoutes";
-import authUserRoutes from "./routes/AuthUserRoutes";
-import trackRoutes from "./routes/TrackRoutes";
-import playlistRoutes from "./routes/PlaylistRoutes";
-import streamRoutes from "./routes/StreamRoutes";
-import {
-    genericExpressErrorHandler,
-    processException,
-    processRejection
-} from "./routes/middleware/ErrorHandlerMiddleware";
+import authRoleRoutes from "./routes-express/AuthRoleRoutes";
+import authRoutes from "./routes-express/AuthRoutes";
+import authUserRoutes from "./routes-express/AuthUserRoutes";
+import trackRoutes from "./routes-express/TrackRoutes";
+import playlistRoutes from "./routes-express/PlaylistRoutes";
+import streamRoutes from "./routes-express/StreamRoutes";
+import {errorHandler,} from "./routes-express/middleware/ErrorHandlerMiddleware";
+import {processException, processRejection} from "./utils/ErrorHandler";
 
 
 process.on('unhandledRejection', processRejection);
@@ -37,7 +34,7 @@ AppExpress.use('/track', trackRoutes);
 AppExpress.use('/playlist', playlistRoutes);
 AppExpress.use('/stream', streamRoutes);
 
-AppExpress.use(genericExpressErrorHandler);
+AppExpress.use(errorHandler);
 
 sequelize.authenticate().finally(() => {
     const port: string | number = process.env.EXPRESS_PORT || 3000

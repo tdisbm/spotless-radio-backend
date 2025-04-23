@@ -22,7 +22,7 @@ export async function streamRequest(
         correlationId
     };
 
-    await client.xAdd(stream, '*', { data: JSON.stringify(message) });
+    await client.xAdd(stream, '*', {data: JSON.stringify(message)});
 
     try {
         await client.xGroupCreate(responseStream, 'responseGroup', '$', {
@@ -51,7 +51,7 @@ export async function streamRequest(
                 );
 
                 if (response) {
-                    const { correlationId: receivedId, response: responseData } =
+                    const {correlationId: receivedId, response: responseData} =
                         JSON.parse(response[0].messages[0].message.data);
                     if (receivedId === correlationId) {
                         resolve(responseData);
@@ -109,7 +109,7 @@ export async function streamResponder(
 
             const message = response[0].messages[0];
             const messageData = message.message.data;
-            const { payload, responseStream, correlationId }: StreamMessage =
+            const {payload, responseStream, correlationId}: StreamMessage =
                 typeof messageData === 'string' ? JSON.parse(messageData) : messageData;
 
             try {

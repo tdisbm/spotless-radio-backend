@@ -35,7 +35,18 @@ export class Track extends Model<Track> {
     @NotNull
     @Unique
     @Column({type: DataType.STRING})
+    name: string
+
+    @AllowNull(false)
+    @NotNull
+    @Unique
+    @Column({type: DataType.STRING})
     location: string;
+
+    @AllowNull(false)
+    @NotNull
+    @Column({type: DataType.JSON})
+    metadata: any;
 
     @BelongsToMany(() => Playlist, () => TrackPlaylist)
     declare playlists: NonAttribute<Playlist[]>;
