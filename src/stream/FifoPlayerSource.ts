@@ -46,6 +46,7 @@ export class FifoPlayerSource extends FifoSource {
 
     public args(): string[] {
         return [
+            '-thread_queue_size', '512',
             '-f', String(this.config.encoding),
             '-ar', String(this.config.sampleRate),
             '-ac', String(this.config.channels),

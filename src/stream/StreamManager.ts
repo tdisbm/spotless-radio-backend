@@ -87,9 +87,9 @@ class StreamManager {
             audioProcBin: STREAM_FFMPEG_BIN,
             sampleRate: Number(STREAM_FFMPEG_SAMPLE_RATE),
             sampleBytes: 3,
-            sampleDurationMs: 100,
+            sampleDurationMs: 50,
             channels: 2,
-            starveTimeoutMs: 1500,
+            starveTimeoutMs: 1000,
             encoding: 's24le'
         });
         const player: FifoPlayerSource = new FifoPlayerSource({
@@ -98,9 +98,9 @@ class StreamManager {
             audioProcBin: STREAM_FFMPEG_BIN,
             sampleRate: Number(STREAM_FFMPEG_SAMPLE_RATE),
             sampleBytes: 3,
-            sampleDurationMs: 100,
+            sampleDurationMs: 50,
             channels: 2,
-            starveTimeoutMs: 1500,
+            starveTimeoutMs: 1000,
             encoding: 's24le'
         });
         const mixer: FifoSourceMixer = new FifoSourceMixer({

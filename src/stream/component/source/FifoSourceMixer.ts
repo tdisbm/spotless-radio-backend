@@ -19,4 +19,8 @@ export class FifoSourceMixer extends SourceMixer {
     protected onExit(code): void {
         console.log(`[Mixer closed]: Code - ${code}`);
     }
+
+    protected onData(data) {
+        console.log(String(data));
+    }
 }

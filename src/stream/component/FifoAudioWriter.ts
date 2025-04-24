@@ -1,5 +1,5 @@
 import fs from "fs";
-import {WriteStream} from "node:fs";
+import { WriteStream } from "node:fs";
 
 export type FifoWriterOptions = {
     fifo: string;
@@ -13,39 +13,40 @@ export type FifoWriterOptions = {
 
 export class FifoAudioWriter {
     private options: FifoWriterOptions;
-    private buffer: Buffer;
     private writer: WriteStream;
-
-    private timeoutRunner: NodeJS.Timeout | null;
-    private timeoutStarve: NodeJS.Timeout | null;
-    private readonly chunkSize: number;
+    private chunkSize: number;
+    private currentVolume: number;
     private isRunning: boolean;
     private isIdle: boolean;
-    private currentVolume: number;
+    private timeoutRunner: NodeJS.Timeout | null;
+    private timeoutStarve: NodeJS.Timeout | null;
+    private starveFn: (() => void | Promise<void>) | null = null;
 
-    private starveFn: (() => void | Promise<void>) | null;
+    private queue: Buffer[] = [];
+    private bufferedBytes: number = 0;
+    private readonly emptyChunk: Buffer;
+    private reuseVolumeBuffer: Buffer;
 
     constructor(options: FifoWriterOptions) {
-        this.options = {...options};
-        this.buffer = Buffer.alloc(0);
+        this.options = { ...options };
         this.writer = fs.createWriteStream(this.options.fifo);
-        this.chunkSize =
-            (this.options.sampleRate *
-                this.options.channels *
-                this.options.sampleBytes *
-                this.options.sampleDurationMs) /
-            1000;
-        this.currentVolume = options.initialVolume !== undefined ? options.initialVolume : 1.0;
-        this.createInterval();
+        this.chunkSize = (options.sampleRate * options.channels * options.sampleBytes * options.sampleDurationMs) / 1000;
+        this.currentVolume = options.initialVolume ?? 1.0;
+        this.isRunning = true;
         this.isIdle = true;
+        this.timeoutRunner = null;
+        this.timeoutStarve = null;
+
+        this.emptyChunk = Buffer.alloc(this.chunkSize, 0);
+        this.reuseVolumeBuffer = Buffer.alloc(this.chunkSize);
+
+        this.createInterval();
     }
 
     feed(chunk: Buffer) {
-        if (this.isRunning) {
-            this.buffer = Buffer.concat([this.buffer, chunk]);
-        } else {
-            console.log(`[${this.constructor.name}] Closed`);
-        }
+        if (!this.isRunning) return;
+        this.queue.push(chunk);
+        this.bufferedBytes += chunk.length;
     }
 
     pause() {
@@ -61,128 +62,123 @@ export class FifoAudioWriter {
     }
 
     flush() {
-        this.buffer = Buffer.alloc(0);
+        this.queue = [];
+        this.bufferedBytes = 0;
     }
 
     destroy() {
-        if (this.timeoutRunner) {
-            clearInterval(this.timeoutRunner);
-            this.timeoutRunner = null;
-        }
-        if (this.timeoutStarve) {
-            clearTimeout(this.timeoutStarve);
-            this.timeoutStarve = null;
-        }
+        if (this.timeoutRunner) clearInterval(this.timeoutRunner);
+        if (this.timeoutStarve) clearTimeout(this.timeoutStarve);
+        this.writer.end();
         this.isRunning = false;
         this.isIdle = true;
-        this.writer.end();
     }
 
     async fadeIn(durationMs: number, targetVolume: number = 1.0) {
         const steps = Math.ceil(durationMs / this.options.sampleDurationMs);
         const volumeIncrement = (targetVolume - this.currentVolume) / steps;
-
         for (let i = 0; i < steps; i++) {
-            this.currentVolume += volumeIncrement;
-            this.currentVolume = Math.max(0, Math.min(1, this.currentVolume)); // Clamp volume
+            this.currentVolume = Math.max(0, Math.min(1, this.currentVolume + volumeIncrement));
             await new Promise((resolve) => setTimeout(resolve, this.options.sampleDurationMs));
         }
-        this.currentVolume = targetVolume; // Ensure the final volume is set
-        console.log(`[${this.constructor.name}] Fade in complete to ${this.currentVolume}`);
+        this.currentVolume = targetVolume;
     }
 
     async fadeOut(durationMs: number, targetVolume: number = 0.0) {
         const steps = Math.ceil(durationMs / this.options.sampleDurationMs);
         const volumeDecrement = (this.currentVolume - targetVolume) / steps;
-
         for (let i = 0; i < steps; i++) {
-            this.currentVolume -= volumeDecrement;
-            this.currentVolume = Math.max(0, Math.min(1, this.currentVolume)); // Clamp volume
+            this.currentVolume = Math.max(0, Math.min(1, this.currentVolume - volumeDecrement));
             await new Promise((resolve) => setTimeout(resolve, this.options.sampleDurationMs));
         }
-        this.currentVolume = targetVolume; // Ensure the final volume is set
-        console.log(`[${this.constructor.name}] Fade out complete to ${this.currentVolume}`);
+        this.currentVolume = targetVolume;
     }
 
     public setOnStarve(starveFn: () => void | Promise<void>) {
         this.starveFn = starveFn;
     }
 
-    private applyVolume(chunk: Buffer): Buffer {
-        if (this.currentVolume === 1.0) {
-            return chunk;
+    private createInterval() {
+        this.timeoutRunner = setInterval(() => {
+            if (!this.isRunning) return;
+
+            const chunk = this.isIdle || this.bufferedBytes === 0
+                ? this.emptyChunk
+                : this.drainChunk();
+
+            const adjusted = this.applyVolume(chunk);
+            this.writer.write(adjusted);
+            this.refreshStarveTimeout();
+        }, this.options.sampleDurationMs);
+    }
+
+    private drainChunk(): Buffer {
+        let pulled: Buffer = Buffer.alloc(0);
+        let pulledLen: number = 0;
+
+        while (this.queue.length && pulledLen < this.chunkSize) {
+            const next: Buffer = this.queue[0];
+            const needed: number = this.chunkSize - pulledLen;
+
+            if (next.length <= needed) {
+                pulled = Buffer.concat([pulled, next]);
+                pulledLen += next.length;
+                this.queue.shift();
+                this.bufferedBytes -= next.length;
+            } else {
+                pulled = Buffer.concat([pulled, next.subarray(0, needed)]);
+                this.queue[0] = next.subarray(needed);
+                this.bufferedBytes -= needed;
+                pulledLen += needed;
+            }
         }
 
-        const sampleSizeBytes = this.options.sampleBytes;
-        const numChannels = this.options.channels;
-        const numSamples = chunk.length / (sampleSizeBytes * numChannels);
-        const outputBuffer = Buffer.alloc(chunk.length);
+        if (pulled.length < this.chunkSize) {
+            return Buffer.concat([pulled, Buffer.alloc(this.chunkSize - pulled.length, 0)]);
+        }
 
-        for (let i = 0; i < numSamples; i++) {
-            for (let j = 0; j < numChannels; j++) {
-                const sampleStart = i * numChannels * sampleSizeBytes + j * sampleSizeBytes;
+        return pulled;
+    }
 
-                if (sampleSizeBytes === 2) {
-                    const sample = chunk.readInt16LE(sampleStart);
-                    const adjustedSample = Math.round(sample * this.currentVolume);
-                    outputBuffer.writeInt16LE(adjustedSample, sampleStart);
-                } else if (sampleSizeBytes === 3) {
-                    const byte1 = chunk[sampleStart];
-                    const byte2 = chunk[sampleStart + 1];
-                    const byte3 = chunk[sampleStart + 2];
-                    let sample = (byte3 << 16) | (byte2 << 8) | byte1;
-                    if (sample & 0x800000) {
-                        sample |= 0xFF000000; // Sign extend
-                    }
-                    const adjustedSample = Math.round(sample * this.currentVolume);
-                    const clampedSample = Math.max(-8388608, Math.min(8388607, adjustedSample));
-                    outputBuffer[sampleStart] = clampedSample & 0xFF;
-                    outputBuffer[sampleStart + 1] = (clampedSample >> 8) & 0xFF;
-                    outputBuffer[sampleStart + 2] = (clampedSample >> 16) & 0xFF;
-                } else if (sampleSizeBytes === 4) {
-                    const sample = chunk.readInt32LE(sampleStart);
-                    const adjustedSample = Math.round(sample * this.currentVolume);
-                    outputBuffer.writeInt32LE(adjustedSample, sampleStart);
+    private applyVolume(chunk: Buffer): Buffer {
+        if (this.currentVolume === 1.0) return chunk;
+
+        const bytes: number = this.options.sampleBytes;
+        const channels: number = this.options.channels;
+        const samples: number = chunk.length / (bytes * channels);
+        const output: Buffer = this.reuseVolumeBuffer;
+        for (let i = 0; i < samples; i++) {
+            for (let j = 0; j < channels; j++) {
+                const idx: number = i * channels * bytes + j * bytes;
+                if (bytes === 2) {
+                    const sample = chunk.readInt16LE(idx);
+                    output.writeInt16LE(Math.round(sample * this.currentVolume), idx);
+                } else if (bytes === 3) {
+                    let sample: number = (chunk[idx + 2] << 16) | (chunk[idx + 1] << 8) | chunk[idx];
+                    if (sample & 0x800000) sample |= 0xFF000000;
+                    let adjusted: number = Math.round(sample * this.currentVolume);
+                    adjusted = Math.max(-8388608, Math.min(8388607, adjusted));
+                    output[idx] = adjusted & 0xFF;
+                    output[idx + 1] = (adjusted >> 8) & 0xFF;
+                    output[idx + 2] = (adjusted >> 16) & 0xFF;
+                } else if (bytes === 4) {
+                    const sample = chunk.readInt32LE(idx);
+                    output.writeInt32LE(Math.round(sample * this.currentVolume), idx);
                 }
             }
         }
 
-        return outputBuffer;
-    }
-
-    private createInterval() {
-        if (this.timeoutRunner) return;
-        const emptyChunk: Buffer = Buffer.alloc(this.chunkSize, 0);
-        this.isRunning = true;
-        this.timeoutRunner = setInterval(() => {
-            if (this.isRunning && !this.isIdle && this.buffer.length) {
-                const chunkLen: number = Math.min(this.chunkSize, this.buffer.length);
-                const originalChunk: Buffer = this.buffer.subarray(0, chunkLen);
-                const adjustedChunk: Buffer = this.applyVolume(originalChunk);
-                this.buffer = this.buffer.subarray(chunkLen);
-                this.writer.write(adjustedChunk);
-                this.logChunk(originalChunk.length, this.buffer.length);
-            } else {
-                this.writer.write(emptyChunk);
-                this.refreshStarveTimeout();
-            }
-        }, this.options.sampleDurationMs);
+        return Buffer.from(output);
     }
 
     private refreshStarveTimeout() {
-        if (this.isIdle === false && !this.timeoutStarve && this.starveFn) {
+        if (!this.timeoutStarve && this.starveFn && !this.isIdle) {
             this.timeoutStarve = setTimeout(async () => {
                 this.timeoutStarve = null;
-                if (!this.buffer.length && this.starveFn) {
+                if (this.bufferedBytes === 0 && this.starveFn) {
                     await this.starveFn();
                 }
             }, this.options.starveTimeoutMs);
         }
-    }
-
-    private logChunk(chunkLen: number, bufferLen: number) {
-        const fifo: string = this.options.fifo;
-        const name: string = this.constructor.name;
-        console.log(`[${name}] Fed ${chunkLen} -> ${fifo}, Remaining ${bufferLen}, Volume ${this.currentVolume}`);
     }
 }
