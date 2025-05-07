@@ -13,6 +13,7 @@ import playlistRoutes from "./routes-express/PlaylistRoutes";
 import streamRoutes from "./routes-express/StreamRoutes";
 import {errorHandler,} from "./routes-express/middleware/ErrorHandlerMiddleware";
 import {processException, processRejection} from "./utils/ErrorHandler";
+import {TrackPlaylist} from "./database/models/TrackPlaylist";
 
 
 process.on('unhandledRejection', processRejection);

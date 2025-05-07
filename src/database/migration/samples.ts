@@ -27,7 +27,7 @@ export async function migrate() {
     });
     const stream: Stream = await Stream.create({
         name: "Some name",
-        host: "localhost",
+        host: "icecast",
         port: 6969,
         endpoint: "teststream",
         username: "source",

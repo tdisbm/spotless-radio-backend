@@ -29,14 +29,12 @@ export class TrackPlaylist extends Model<TrackPlaylist> {
     @ForeignKey(() => Track)
     @AllowNull(false)
     @NotNull
-    @Unique('trackId-playlistId')
     @Column(DataType.STRING)
     trackId: string;
 
     @ForeignKey(() => Playlist)
     @AllowNull(false)
     @NotNull
-    @Unique('trackId-playlistId')
     @Column(DataType.STRING)
     playlistId: string;
 
