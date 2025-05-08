@@ -3,18 +3,20 @@ import {SourceConfig} from "./component/types";
 
 
 export class FifoMicSource extends FifoSource {
+    private readonly status: {isActive: boolean, cid: string};
+
     constructor(config: SourceConfig) {
         super(config);
-        this.notifier.next(null);  // The mic is not active by default
         this.buffer.setOnStarve(() => this.close());
+        this.status = {isActive: false, cid: this.config.cid};
+        this.notifier.next(this.status);  // The mic is not active by default
     }
 
     async write(buffer: any) {
-        if (this.notifier.getValue() === null)
-            this.notifier.next({  // Notifying write action
-                cid: this.config.cid,
-                isActive: true
-            });
+        if (this.notifier.getValue() === null) {
+            this.status.isActive = true;
+            this.notifier.next(this.status);
+        }
         this.buffer.resume();
         this.buffer.feed(buffer);
     }
@@ -24,7 +26,8 @@ export class FifoMicSource extends FifoSource {
     }
 
     async close() {
-        this.notifier.next(null);  // Close the mic event
+        this.status.isActive = false;
+        this.notifier.next(this.status);  // Close the mic event
         this.buffer.pause();
     }
 

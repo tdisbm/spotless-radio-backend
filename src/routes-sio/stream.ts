@@ -10,8 +10,8 @@ export function registerStreamHandler(io, socket) {
 
     socket.on("stream:mixer:open", async (streamId: string) => {
         const {bundle, isCreated} = await streamManager.openMixer(streamId);
-        await update(streamId, 'status', true)
-        io.emit("stream:mixer:info", {streamId, status: true});
+        await update(streamId, 'mixer', {isOpen: true})
+        io.emit("stream:mixer:info", {streamId, state: {isOpen: true}});
         if (isCreated) {
             await bundle.player.fadeIn(0, 1);
             await bundle.mic.fadeIn(0, 0.01);
@@ -39,8 +39,8 @@ export function registerStreamHandler(io, socket) {
 
     socket.on("stream:mixer:close", async (streamId: string) => {
         await streamManager.closeMixer(streamId);
-        await update(streamId, 'status', null);
-        io.emit("stream:mixer:status", {streamId, status: false});
+        await update(streamId, 'mixer', null);
+        io.emit("stream:mixer:info", {streamId, state: {isOpen: false}});
     });
 
     socket.on("stream:player:open", async (streamId: string, trackId: string) => {
