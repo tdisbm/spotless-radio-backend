@@ -1,5 +1,5 @@
 import {
-    AllowNull,
+    AllowNull, BeforeCreate, BeforeSave, BeforeUpdate,
     BelongsTo,
     Column,
     DataType,
@@ -13,6 +13,7 @@ import {
 } from "sequelize-typescript";
 import {Playlist} from "./Playlist";
 import {BelongsToSetAssociationMixin, NonAttribute} from "sequelize";
+import path from "node:path";
 
 
 // noinspection JSAnnotator
@@ -37,6 +38,10 @@ export class Stream extends Model<Stream> {
     @NotNull
     @Column({type: DataType.STRING})
     host: string;
+
+    @AllowNull(true)
+    @Column({type: DataType.STRING})
+    publicHost: string
 
     @AllowNull(false)
     @NotNull
@@ -81,7 +86,29 @@ export class Stream extends Model<Stream> {
     declare setPlaylist: BelongsToSetAssociationMixin<Playlist, Playlist["id"]>;
 
 
+    @BeforeSave
+    static normalizePath(instance) {
+        if (!instance.publicHost)
+            instance.publicHost = instance.host;
+    }
+
+    @BeforeCreate
+    static beforeCreateHook(instance) {
+        if (!instance.publicHost)
+            instance.publicHost = instance.host;
+    }
+
+    @BeforeUpdate
+    static beforeUpdateHook(instance) {
+        if (!instance.publicHost)
+            instance.publicHost = instance.host;
+    }
+
     connectionUrl() {
         return `icecast://${this.username}:${this.password}@${this.host}:${this.port}/${this.endpoint}`
+    }
+
+    publicUrl() {
+        return `http://${this.publicHost}:${this.port}/${this.endpoint}`;
     }
 }

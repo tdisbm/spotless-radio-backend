@@ -10,12 +10,14 @@ export function registerStreamHandler(io, socket) {
 
     socket.on("stream:mixer:open", async (streamId: string) => {
         const {bundle, isCreated} = await streamManager.openMixer(streamId);
+        await update(streamId, 'status', true)
+        io.emit("stream:mixer:info", {streamId, status: true});
         if (isCreated) {
             await bundle.player.fadeIn(0, 1);
             await bundle.mic.fadeIn(0, 0.01);
             bundle.player.notifier.subscribe((state) => {
                 update(bundle.player.config.cid, bundle.player.config.name, state);
-                io.emit("stream:player:info", state);
+                io.emit("stream:player:info", {streamId, state});
             });
             bundle.mic.notifier.subscribe((state) => {
                 if (state) {
@@ -28,7 +30,7 @@ export function registerStreamHandler(io, socket) {
                 }
                 for (const [id, socket] of io.sockets.sockets) {
                     if (socket.userIsAdmin) {
-                        socket.emit("stream:mic:info", state);
+                        socket.emit("stream:mic:info", {streamId, state});
                     }
                 }
             })
@@ -37,6 +39,8 @@ export function registerStreamHandler(io, socket) {
 
     socket.on("stream:mixer:close", async (streamId: string) => {
         await streamManager.closeMixer(streamId);
+        await update(streamId, 'status', null);
+        io.emit("stream:mixer:status", {streamId, status: false});
     });
 
     socket.on("stream:player:open", async (streamId: string, trackId: string) => {
