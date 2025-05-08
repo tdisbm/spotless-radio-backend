@@ -32,16 +32,40 @@ export async function createTracks(files: any) {
 }
 
 export async function deleteTracks(trackIds: string[]) {
+    if (!Array.isArray(trackIds) || trackIds.length === 0) {
+        throw new Error('Invalid track IDs: Must be a non-empty array');
+    }
+
     const transaction: Transaction = await sequelize.transaction();
     try {
-        const tracksLookup: any = {where: {id: {[Op.in]: trackIds}}}
-        const tracks: Track[] = await Track.findAll({...tracksLookup, transaction, lock: transaction.LOCK.UPDATE});
-        await deleteFiles(tracks.map((t: Track) => t.location));
-        await Track.destroy(tracksLookup);
+        console.log('Deleting tracks with IDs:', trackIds);
+        const tracksLookup: any = { where: { id: { [Op.in]: trackIds } } };
+        const tracks: Track[] = await Track.findAll({
+            ...tracksLookup,
+            transaction,
+            lock: transaction.LOCK.UPDATE
+        });
+
+        if (tracks.length === 0) {
+            throw new Error('No tracks found for the provided IDs');
+        }
+
+        console.log('Tracks found:', tracks.map(t => ({ id: t.id, location: t.location })));
+
+        const fileLocations = tracks.map((t: Track) => t.location).filter(location => location);
+        if (fileLocations.length > 0) {
+            await deleteFiles(fileLocations);
+        } else {
+            console.log('No file locations to delete');
+        }
+
+        await Track.destroy({ ...tracksLookup, transaction });
         await transaction.commit();
-    } catch (e) {
+        console.log('Tracks deleted successfully');
+    } catch (e: any) {
         await transaction.rollback();
-        throw e;
+        console.error('Error in deleteTracks:', e.message);
+        throw new Error(`Failed to delete tracks: ${e.message}`);
     }
 }
 

@@ -13,10 +13,15 @@ router.post("/upload", [AuthMiddleware, IsAdminMiddleware], async (req: any, res
 
 
 router.delete('/delete', [AuthMiddleware, IsAdminMiddleware], async (req: Request, res: Response) => {
-    await deleteTracks(req.body); // [id1, id2, id3]
-    res.status(201).json({});
+    try {
+        console.log('Request body:', req.body);
+        await deleteTracks(req.body); // [id1, id2, id3]
+        res.status(200).json({ message: 'Tracks deleted successfully' });
+    } catch (error: any) {
+        console.error('Error in deleteTracks endpoint:', error.message);
+        res.status(500).json({ message: 'Failed to delete tracks', error: error.message });
+    }
 });
-
 
 router.put('/rename', [AuthMiddleware, IsAdminMiddleware], async (req: Request, res: Response) => {
     await renameTracks(req.body); // [{id: string, newName: string}, {...}]

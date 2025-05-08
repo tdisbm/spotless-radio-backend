@@ -28,22 +28,31 @@ export async function uploadFiles(root: string, files: any) {
 }
 
 export async function deleteFiles(filePaths: string[]) {
-    const tempDir: string = './.temp'
-    const stagedFiles: { original: string; staged: string }[] = [];
-    try {
-        await fsPromises.mkdir(tempDir, {recursive: true});
-        for (const file of filePaths) {
-            const fileName: string = path.basename(file);
-            const stagedPath: string = path.join(tempDir, fileName);
-            await fsPromises.rename(file, stagedPath);
-            stagedFiles.push({original: file, staged: stagedPath});
+    const errors: string[] = [];
+
+    for (const filePath of filePaths) {
+        if (!filePath) {
+            errors.push('File path is undefined or empty');
+            continue;
         }
-        await Promise.all(stagedFiles.map(f => fsPromises.unlink(f.staged)));
-    } catch (error) {
-        for (const file of stagedFiles) {
-            await fsPromises.rename(file.staged, file.original);
+
+        try {
+            const absolutePath = path.resolve(filePath);
+            await fsPromises.unlink(absolutePath);
+            console.log(`Successfully deleted file: ${absolutePath}`);
+        } catch (error: any) {
+            if (error.code === 'ENOENT') {
+                errors.push(`File not found: ${filePath}`);
+            } else if (error.code === 'EACCES') {
+                errors.push(`Permission denied for file: ${filePath}`);
+            } else {
+                errors.push(`Failed to delete file ${filePath}: ${error.message}`);
+            }
         }
-        throw new Error(`Deletion failed and was rolled back. Reason: ${error}`);
+    }
+
+    if (errors.length > 0) {
+        throw new Error(`Failed to delete some files: ${errors.join('; ')}`);
     }
 }
 

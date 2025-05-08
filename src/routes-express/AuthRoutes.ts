@@ -17,20 +17,27 @@ router.post('/sign-in', async (request, response) => {
             responseStat = 417;
             responseData = { message: 'Incorrect password' };
         } else {
+            const userData = await user.toJSON();
+            const roles = userData.roles.map((role: any) => role.role); // Extrage rolurile
             responseStat = 200;
-            responseData = { token: JWTTokenGenerate(await user.toJSON()) }; // returning JSON object
+            responseData = {
+                token: JWTTokenGenerate(userData),
+                roles,
+            };
         }
     } catch (e) {
         responseStat = e instanceof UserNotFoundError ? 404 : 500;
         responseData = { message: e.toString() };
     }
-    response.status(responseStat).json(responseData); // using .json() for Content-Type: application/json
+    response.status(responseStat).json(responseData);
 });
 
 router.post('/sign-up', async (request, response) => {
     const user: AuthUser = await createUserSignUp({ ...request.body });
-    const authToken = JWTTokenGenerate(await user.toJSON());
-    response.status(200).json({ token: authToken }); // JSON object
+    const userData = await user.toJSON();
+    const authToken = JWTTokenGenerate(userData);
+    const roles = userData.roles.map((role: any) => role.role); // extract roles
+    response.status(200).json({ token: authToken, roles }); // add roles in response
 });
 
 export default router;
