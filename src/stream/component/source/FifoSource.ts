@@ -29,6 +29,7 @@ export abstract class FifoSource implements Source {
 
     destroy() {
         this.buffer.destroy();
+        this.notifier.next(null);
         fs.unlinkSync(this.fifo);
     }
 

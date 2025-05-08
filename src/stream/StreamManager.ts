@@ -29,8 +29,6 @@ class StreamManager {
         const bundle: MixerBundle = this.bundles.get(streamId);
         if (bundle) {
             console.log(`Close mixer ${streamId}`)
-            await bundle.mic.close()
-            await bundle.player.close();
             bundle.mixer.close();
             bundle.mic.destroy();
             bundle.player.destroy();
