@@ -26,7 +26,7 @@ export async function migrate() {
         isRecursive: true
     });
     const stream: Stream = await Stream.create({
-        name: "Some name",
+        name: "MAIN-STREAM",
         host: "icecast",
         port: 6969,
         endpoint: "teststream",
