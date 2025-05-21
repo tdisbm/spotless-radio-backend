@@ -1,0 +1,32 @@
+# Full valid OpenSSL config for self-signed cert generation
+# openssl
+#   req
+#   -x509 -nodes
+#   -newkey rsa:2048
+#   -keyout local-key.pem
+#   -out local-cert.pem
+#   -days 3650
+#   -config openssl.cnf
+
+[ req ]
+default_bits        = 2048
+default_md          = sha256
+default_keyfile     = local-key.pem
+prompt              = no
+encrypt_key         = no
+distinguished_name  = dn
+x509_extensions     = v3_req
+
+[ dn ]
+C            = MD
+ST           = Chisinau
+L            = Chisinau
+O            = RadioSpotless
+OU           = Dev
+CN           = localhost
+
+[ v3_req ]
+subjectAltName = @alt_names
+
+[ alt_names ]
+DNS.1 = localhost

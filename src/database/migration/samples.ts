@@ -18,7 +18,7 @@ export async function migrate() {
         roles: [admin.dataValues]
     });
     const playlist: Playlist = await createPlaylist({
-        name: "default-stream",
+        name: "MAIN-PLAYLIST",
         description: "My default stream",
         coverImage: "No cover image for now",
         tracks: [],
@@ -28,6 +28,7 @@ export async function migrate() {
     const stream: Stream = await Stream.create({
         name: "MAIN-STREAM",
         host: "icecast",
+        publicHost: "localhost",
         port: 6969,
         endpoint: "teststream",
         username: "source",

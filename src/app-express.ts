@@ -1,7 +1,6 @@
 import express, {Express} from "express";
 import 'express-async-errors';
 import fileUpload from "express-fileupload";
-import {createServer, Server as ServerHTTP} from "node:http";
 import {sequelize} from "./database";
 import {CORSMiddleware} from "./routes-express/middleware/CORSMiddleware";
 
@@ -13,14 +12,12 @@ import playlistRoutes from "./routes-express/PlaylistRoutes";
 import streamRoutes from "./routes-express/StreamRoutes";
 import {errorHandler,} from "./routes-express/middleware/ErrorHandlerMiddleware";
 import {processException, processRejection} from "./utils/ErrorHandler";
-import {TrackPlaylist} from "./database/models/TrackPlaylist";
 
 
 process.on('unhandledRejection', processRejection);
 process.on('uncaughtException', processException);
 
 const AppExpress: Express = express();
-const AppServer: ServerHTTP = createServer(AppExpress);
 
 AppExpress.use(CORSMiddleware);
 AppExpress.use(fileUpload());
@@ -39,7 +36,7 @@ AppExpress.use(errorHandler);
 
 sequelize.authenticate().finally(() => {
     const port: string | number = process.env.EXPRESS_PORT || 3000
-    AppServer.listen(port, () => {
+    AppExpress.listen(port, () => {
         console.log(`[Express]: Running on port ${port}`);
     });
 });
