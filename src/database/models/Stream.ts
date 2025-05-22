@@ -1,5 +1,8 @@
 import {
-    AllowNull, BeforeCreate, BeforeSave, BeforeUpdate,
+    AllowNull,
+    BeforeCreate,
+    BeforeSave,
+    BeforeUpdate,
     BelongsTo,
     Column,
     DataType,
@@ -13,7 +16,6 @@ import {
 } from "sequelize-typescript";
 import {Playlist} from "./Playlist";
 import {BelongsToSetAssociationMixin, NonAttribute} from "sequelize";
-import path from "node:path";
 
 
 // noinspection JSAnnotator
@@ -106,9 +108,5 @@ export class Stream extends Model<Stream> {
 
     connectionUrl() {
         return `icecast://${this.username}:${this.password}@${this.host}:${this.port}/${this.endpoint}`
-    }
-
-    publicUrl() {
-        return `http://${this.publicHost}:${this.port}/${this.endpoint}`;
     }
 }
